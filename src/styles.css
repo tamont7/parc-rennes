@@ -2889,6 +2889,11 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   .tree-detail.is-mobile {
     z-index: 11;
 
+    /* Chrome Android peut signaler un inset bas alors que la barre système
+       reste hors du viewport. Comme pour la barre basse, on ne le réserve
+       que sur les navigateurs iOS qui en ont réellement besoin. */
+    --mobile-detail-safe-area: 0px;
+
     display: flex;
     flex-direction: column;
 
@@ -2902,7 +2907,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     border: 0;
     border-radius: 28px 28px 0 0;
 
-    padding: 20px 18px max(18px, env(safe-area-inset-bottom));
+    padding: 20px 18px max(18px, var(--mobile-detail-safe-area));
 
     /* La fiche réduite ne doit pas laisser son illustration recouvrir les
        dimensions lorsqu'un nom d'arbre tient sur plusieurs lignes. */
@@ -2947,7 +2952,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     position: absolute;
     z-index: 1;
     top: auto;
-    bottom: max(18px, env(safe-area-inset-bottom));
+    bottom: max(18px, var(--mobile-detail-safe-area));
     left: 18px;
     display: grid;
     width: 44px;
@@ -3038,6 +3043,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
 
   .tree-detail.is-mobile.is-mobile-expanded .detail-footer {
     position: static;
+    flex: 0 0 auto;
     justify-content: center;
     margin: 14px 0 0;
     padding: 10px 0;
@@ -3112,6 +3118,12 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   .tree-detail.is-mobile.is-mobile-expanded {
     height: 90dvh;
     overflow: auto;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .tree-detail.is-mobile {
+      --mobile-detail-safe-area: env(safe-area-inset-bottom);
+    }
   }
 
   .map-navigation.is-tree-open {
