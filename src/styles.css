@@ -2460,16 +2460,37 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
 
   .map-navigation {
     right: 16px;
-    bottom: calc(38px + env(safe-area-inset-bottom));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    grid-template-areas:
+      ". . locate"
+      ". . compass"
+      "dimension recenter zoom";
+    grid-template-columns: repeat(3, 36px);
+    grid-template-rows: auto auto auto;
+    column-gap: 6px;
+    row-gap: 8px;
+    align-items: end;
+    justify-items: center;
   }
 
-  /* La navigation reste juste au-dessus de la fiche résumée, sans remonter
-     inutilement sur toute la hauteur de la carte. */
+  /* Seule la barre basse décale le groupe de contrôles. */
+  .map-area:has(.mobile-bottom-bar:not(.is-hidden)) .map-navigation {
+    bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* La navigation reste juste au-dessus de la fiche résumée. */
   .map-navigation.is-tree-open {
     bottom: calc(160px + env(safe-area-inset-bottom));
   }
 
   .map-area:has(.tree-detail-extra) .map-navigation {
+    display: none;
+  }
+
+  .map-navigation.is-mobile-panel-open .map-dimension-button,
+  .map-navigation.is-mobile-panel-open .map-recenter-button,
+  .map-navigation.is-tree-open .map-dimension-button,
+  .map-navigation.is-tree-open .map-recenter-button {
     display: none;
   }
 
@@ -2615,37 +2636,32 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     stroke-width: 1.8;
   }
 
-  /*
-   * Les contrôles de la carte restent au-dessus
-   * de la nouvelle bottom bar de 56px.
-   */
-  .map-navigation {
-    bottom: calc(72px + env(safe-area-inset-bottom));
+  /* Raccourcis d'échelle réunis sur une même grille : 3D, recadrage, zoom. */
+  .map-navigation .map-locate-button {
+    grid-area: locate;
   }
 
-  /* Raccourcis d'échelle réunis sur une même ligne : 3D, recadrage, puis −.
-     Le + reste naturellement au-dessus du − dans son groupe. */
-  .map-dimension-button {
-    position: fixed;
+  .map-navigation .map-compass {
+    grid-area: compass;
+  }
+
+  .map-navigation .map-dimension-button {
+    position: static;
+    grid-area: dimension;
     width: 36px;
     height: 36px;
     border-radius: 8px;
     color: #527164;
     background: rgb(255 255 255 / .96);
-    bottom: calc(71px + env(safe-area-inset-bottom));
-    right: 109px;
   }
 
-  .map-recenter-button {
-    position: fixed;
-    right: 66px;
-    /* Le − fait 34 px de haut : ce décalage centre les trois boutons. */
-    bottom: calc(71px + env(safe-area-inset-bottom));
+  .map-navigation .map-recenter-button {
+    position: static;
+    grid-area: recenter;
   }
 
-  .map-navigation.is-tree-open .map-dimension-button,
-  .map-navigation.is-tree-open .map-recenter-button {
-    bottom: calc(159px + env(safe-area-inset-bottom));
+  .map-navigation .map-zoom-controls {
+    grid-area: zoom;
   }
 
   .map-legend {

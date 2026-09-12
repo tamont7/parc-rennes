@@ -66,6 +66,7 @@ type MapViewProps = {
   viewMode: "2d" | "3d";
   onChangeViewMode: () => void;
   isMobile: boolean;
+  isMobilePanelOpen: boolean;
   hoveredTreeId: string | null;
   onSelectTree: (tree: Tree) => void;
   onSelectLandmark: (landmark: ParkLandmark) => void;
@@ -1517,6 +1518,7 @@ export default function MapView(
     viewMode,
     onChangeViewMode,
     isMobile,
+    isMobilePanelOpen,
     hoveredTreeId,
     onSelectTree,
     onSelectLandmark,
@@ -4065,7 +4067,7 @@ export default function MapView(
         <span>Plan, arbres et reliefs</span>
       </div>
 
-      <div className={`map-navigation ${selectedTree ? "is-tree-open" : ""}`} aria-label="Navigation de la carte">
+      <div className={`map-navigation ${selectedTree ? "is-tree-open" : ""} ${isMobilePanelOpen ? "is-mobile-panel-open" : ""}`} aria-label="Navigation de la carte">
         <button type="button" className={`map-locate-button ${userLocation ? "is-active" : ""}`} onClick={() => {
           if (ignoreLocationClickRef.current) {
             ignoreLocationClickRef.current = false;

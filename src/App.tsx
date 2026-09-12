@@ -945,7 +945,7 @@ export default function App() {
     <section ref={mapAreaRef} className={`map-area ${isParkTransitioning ? "is-transitioning" : ""}`} aria-label="Carte et fiche arbre">
       <MapBoundary key={mapAttempt} onRetry={() => setMapAttempt((value) => value + 1)}>
         <Suspense fallback={<MapSceneLoading />}>
-          <MapView trees={trees} plan={plan} parkId={activePark} isParkTransitioning={isParkTransitioning} onSceneReady={() => { setIsParkTransitioning(false); setMapSceneReady(true); }} visibleTrees={mapVisibleTrees} interactiveTrees={visibleTrees} selectedTree={selectedTree} focusTreeId={focusTreeId} focusRequest={focusRequest} viewMode={mapViewMode} onChangeViewMode={() => setMapViewMode((mode) => mode === "3d" ? "2d" : "3d")} isMobile={isMobile} hoveredTreeId={hoveredTreeId} onSelectTree={chooseTree} onSelectLandmark={chooseLandmark} onRecenter={() => setRecenter((value) => value + 1)} recenter={recenter} />
+          <MapView trees={trees} plan={plan} parkId={activePark} isParkTransitioning={isParkTransitioning} onSceneReady={() => { setIsParkTransitioning(false); setMapSceneReady(true); }} visibleTrees={mapVisibleTrees} interactiveTrees={visibleTrees} selectedTree={selectedTree} focusTreeId={focusTreeId} focusRequest={focusRequest} viewMode={mapViewMode} onChangeViewMode={() => setMapViewMode((mode) => mode === "3d" ? "2d" : "3d")} isMobile={isMobile} isMobilePanelOpen={mobilePanelOpen} hoveredTreeId={hoveredTreeId} onSelectTree={chooseTree} onSelectLandmark={chooseLandmark} onRecenter={() => setRecenter((value) => value + 1)} recenter={recenter} />
         </Suspense>
       </MapBoundary>
       <header className="map-header">
