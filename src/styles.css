@@ -2264,7 +2264,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   right: 0;
   max-width: 100%;
   min-height: 24px;
-  background: rgb(255 255 255 / .95);
+  background: transparent;
   padding: 3px 6px;
   color: #17372c;
   font-size: 11px;
