@@ -197,14 +197,18 @@ function TreeDetail({
   rawFeature,
   count,
   onClose,
+  onToggleSpeciesFilter,
   onReturnToSearch,
+  isSpeciesFilterActive,
   isMobile,
 }: {
   tree: Tree;
   rawFeature: unknown;
   count: number;
   onClose: () => void;
+  onToggleSpeciesFilter: () => void;
   onReturnToSearch?: () => void;
+  isSpeciesFilterActive: boolean;
   isMobile: boolean;
 }) {
   const rawDialogRef = useRef<HTMLDialogElement>(null);
@@ -333,7 +337,7 @@ function TreeDetail({
           ref={headingRef}
           tabIndex={-1}
         >
-          {tree.name} ({count})
+          {tree.name}
         </h2>
 
         <div className="detail-actions">
@@ -398,6 +402,14 @@ function TreeDetail({
             <> · ⌀ {measurements.crownDiameter} m</>
           )}
         </p>
+        <button
+          type="button"
+          className="tree-count"
+          onClick={onToggleSpeciesFilter}
+          aria-pressed={isSpeciesFilterActive}
+          aria-label={`${isSpeciesFilterActive ? "Retirer le filtre" : "Filtrer"} : ${count} arbre${count > 1 ? "s" : ""} de cette espèce`}
+          title={isSpeciesFilterActive ? "Retirer le filtre d’espèce" : "Filtrer cette espèce"}
+        >{count} indiv.</button>
       </div>
 
       <div className="detail-footer">
@@ -822,6 +834,16 @@ export default function App() {
     setSearchSuggestionsOpen(false);
     if (isMobile) setMobilePanelOpen(false);
   };
+  const toggleSpeciesFilter = (taxon: string) => {
+    if (selectedSpecies === taxon) {
+      setSelectedSpecies("");
+      setQuery("");
+    } else {
+      setSelectedSpecies(taxon);
+      setQuery(speciesOptions.find((option) => option.taxon === taxon)?.vernacularName ?? "");
+    }
+    setSearchSuggestionsOpen(false);
+  };
   const clearSearch = () => {
     setQuery("");
     setSelectedSpecies("");
@@ -958,7 +980,7 @@ export default function App() {
           <span className="sr-only">{isFullscreen ? "Quitter le mode plein écran" : "Activer le mode plein écran"}</span>
         </button>
       </header>
-      {selectedTree && <TreeDetail key={selectedTree.id} tree={selectedTree} rawFeature={data?.features.find((feature) => feature.id === selectedTree.id)} count={speciesStats.get(selectedTree.species)?.count ?? 1} onClose={closeDetail} onReturnToSearch={returnToSearchAvailable ? returnToSearch : undefined} isMobile={isMobile} />}
+      {selectedTree && <TreeDetail key={selectedTree.id} tree={selectedTree} rawFeature={data?.features.find((feature) => feature.id === selectedTree.id)} count={speciesStats.get(selectedTree.species)?.count ?? 1} onClose={closeDetail} onToggleSpeciesFilter={() => toggleSpeciesFilter(selectedTree.species)} isSpeciesFilterActive={selectedSpecies === selectedTree.species} onReturnToSearch={returnToSearchAvailable ? returnToSearch : undefined} isMobile={isMobile} />}
       {selectedLandmark && <LandmarkDetail landmark={selectedLandmark} onClose={closeLandmark} />}
       <nav className={`mobile-bottom-bar ${!mapSceneReady || mobilePanelOpen || selectedTree || selectedLandmark ? "is-hidden" : ""}`} aria-label="Navigation principale">
         <button ref={listTriggerRef} className="mobile-sheet-trigger" onClick={openMobilePanel}

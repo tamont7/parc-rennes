@@ -1086,6 +1086,39 @@ h1 {
   margin: 4px 0 8px;
 }
 
+.tree-count {
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 2px 4px;
+  color: #91a398;
+  background: transparent;
+  cursor: pointer;
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .035em;
+  line-height: 1.2;
+  text-decoration: underline dotted #b4c7bb;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  transition: color .15s ease, background-color .15s ease;
+}
+
+.tree-count:hover,
+.tree-count:focus-visible,
+.tree-count[aria-pressed="true"] {
+  color: #315746;
+  background: #e8f0e8;
+  text-decoration-color: currentColor;
+}
+
+.tree-count[aria-pressed="true"] {
+  border-color: #c8dacb;
+}
+
 .tree-summary {
   display: flex;
   align-items: baseline;
@@ -1688,7 +1721,7 @@ button:disabled {
   opacity: .65;
 }
 
-button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park-choice):not(.park-picker-option):not(.mobile-panel-direction):not(.detail-toggle):not(.map-control-button):not(.map-recenter-button):not(.map-locate-button):not(.map-dimension-button):not(.map-compass):not(.brand):not(.fullscreen-toggle):not(.icon-button):not(.text-button):not(.filter-chip):not(.mobile-sheet-trigger):not(.species-option):not(.sort-option):not(.info-button):not(.search-clear):not(.mobile-return-to-search) {
+button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park-choice):not(.park-picker-option):not(.mobile-panel-direction):not(.detail-toggle):not(.map-control-button):not(.map-recenter-button):not(.map-locate-button):not(.map-dimension-button):not(.map-compass):not(.brand):not(.fullscreen-toggle):not(.icon-button):not(.text-button):not(.filter-chip):not(.mobile-sheet-trigger):not(.species-option):not(.sort-option):not(.info-button):not(.search-clear):not(.mobile-return-to-search):not(.tree-count) {
   min-height: 44px;
   border: 1px solid #c1d3c5;
   border-radius: 8px;
