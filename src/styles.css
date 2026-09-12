@@ -2526,12 +2526,9 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     bottom: 0;
     left: 0;
 
-    /*
-     * La hauteur comprend déjà la safe area. En content-box, le padding
-     * inférieur l'ajoutait une seconde fois — particulièrement visible sur
-     * les appareils Android à barre de navigation gestuelle, dont le S24.
-     */
-    box-sizing: border-box;
+    /* Chrome Android peut conserver un inset bas obsolète au chargement.
+       On ne l'applique donc que sur Safari, où viewport-fit=cover l'exige. */
+    --mobile-bottom-safe-area: 0px;
 
     display: flex;
     align-items: center;
@@ -2542,8 +2539,8 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
      * La safe area iPhone est ajoutée en dessous sans décentrer
      * l'icône et le texte "Explorer".
      */
-    height: calc(56px + env(safe-area-inset-bottom));
-    padding: 0 20px env(safe-area-inset-bottom);
+    height: calc(56px + var(--mobile-bottom-safe-area));
+    padding: 0 20px var(--mobile-bottom-safe-area);
 
     background: rgb(255 255 255 / .96);
     box-shadow: 0 -3px 18px rgb(20 50 38 / .13);
@@ -2582,6 +2579,13 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     font-weight: 750;
 
     transform: none;
+  }
+
+  /* Les iPhone avec indicateur d'accueil ont bien besoin de cet espace. */
+  @supports (-webkit-touch-callout: none) {
+    .mobile-bottom-bar {
+      --mobile-bottom-safe-area: env(safe-area-inset-bottom);
+    }
   }
 
   .mobile-bottom-bar .mobile-sheet-trigger svg {

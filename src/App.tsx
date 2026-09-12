@@ -204,7 +204,7 @@ function TreeDetail({
   rawFeature: unknown;
   count: number;
   onClose: () => void;
-  onReturnToSearch: () => void;
+  onReturnToSearch?: () => void;
   isMobile: boolean;
 }) {
   const rawDialogRef = useRef<HTMLDialogElement>(null);
@@ -410,7 +410,7 @@ function TreeDetail({
           {detailsOpen ? "Réduire" : "Détails"}
         </button>
       </div>
-      {isMobile && <button type="button" className="mobile-return-to-search" onClick={onReturnToSearch} aria-label="Retour à la recherche" title="Retour à la recherche">
+      {isMobile && onReturnToSearch && <button type="button" className="mobile-return-to-search" onClick={onReturnToSearch} aria-label="Retour à la recherche" title="Retour à la recherche">
         <svg className="mobile-return-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
       </button>}
 
@@ -577,6 +577,7 @@ export default function App() {
   const [mapSceneReady, setMapSceneReady] = useState(false);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const [mobileSheetSnap, setMobileSheetSnap] = useState<MobileSheetSnap>("low");
+  const [returnToSearchAvailable, setReturnToSearchAvailable] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapAreaRef = useRef<HTMLElement>(null);
@@ -620,6 +621,7 @@ export default function App() {
     setFocusTreeId(null);
     setHoveredTreeId(null);
     setMobilePanelOpen(false);
+    setReturnToSearchAvailable(false);
     setMapSceneReady(false);
   }, [activePark, parkName]);
 
@@ -688,7 +690,13 @@ export default function App() {
     if (!isMobile || !mobilePanelOpen || !viewport || !dialog) return;
     const updateViewport = () => {
       dialog.style.setProperty("--visible-height", `${viewport.height}px`);
-      dialog.style.setProperty("--keyboard-inset", `${Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)}px`);
+      // À 90 %, le champ de recherche est déjà en haut du volet : remonter
+      // également le dialogue quand le clavier apparaît crée un recentrage
+      // inutile. Les ancrages plus bas gardent l'évitement du clavier.
+      const keyboardInset = mobileSheetSnap === "high"
+        ? 0
+        : Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      dialog.style.setProperty("--keyboard-inset", `${keyboardInset}px`);
     };
     updateViewport();
     viewport.addEventListener("resize", updateViewport);
@@ -699,7 +707,7 @@ export default function App() {
       dialog.style.removeProperty("--visible-height");
       dialog.style.removeProperty("--keyboard-inset");
     };
-  }, [mobilePanelOpen, isMobile]);
+  }, [mobilePanelOpen, mobileSheetSnap, isMobile]);
 
   useEffect(() => {
     const dialog = infoDialogRef.current;
@@ -773,6 +781,7 @@ export default function App() {
   const closeDetail = () => {
     const previousId = selectedId;
     setSelectedId(null);
+    setReturnToSearchAvailable(false);
     if (isMobile) listTriggerRef.current?.focus();
     else listRef.current?.querySelector<HTMLButtonElement>(`[data-tree-id="${previousId}"]`)?.focus();
   };
@@ -784,18 +793,20 @@ export default function App() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [selectedId, selectedLandmark, mobilePanelOpen, isMobile]);
 
-  const chooseTree = (tree: Tree) => {
+  const chooseTree = (tree: Tree, fromExplorer = false) => {
     setFocusTreeId(tree.id);
     setFocusRequest((request) => request + 1);
     setSelectedId(tree.id);
     setSelectedLandmark(null);
+    setReturnToSearchAvailable(fromExplorer);
     setMobilePanelOpen(false);
   };
-  const focusTree = (tree: Tree) => {
+  const focusTree = (tree: Tree, fromExplorer = false) => {
     setFocusTreeId(tree.id);
     setFocusRequest((request) => request + 1);
     setSelectedId(tree.id);
     setSelectedLandmark(null);
+    setReturnToSearchAvailable(fromExplorer);
     setMobilePanelOpen(false);
   };
   const chooseLandmark = (landmark: ParkLandmark) => { setSelectedLandmark(landmark); setSelectedId(null); setMobilePanelOpen(false); };
@@ -862,6 +873,7 @@ export default function App() {
   const returnToSearch = () => {
     setSelectedId(null);
     setSelectedLandmark(null);
+    setReturnToSearchAvailable(false);
     setMobileSheetSnap("high");
     setMobilePanelOpen(true);
   };
@@ -907,7 +919,7 @@ export default function App() {
       </div> : !data ? <p className="empty-state">Lecture de l’inventaire…</p> : visibleTrees.length ? visibleTrees.map((tree) => (
         <div key={tree.id} className="tree-list-row" onMouseEnter={() => setHoveredTreeId(tree.id)} onMouseLeave={() => setHoveredTreeId(null)}>
           <button data-tree-id={tree.id} className={`tree-list-item ${tree.id === selectedId ? "is-selected" : ""}`}
-            aria-pressed={tree.id === selectedId} onFocus={() => setHoveredTreeId(tree.id)} onBlur={() => setHoveredTreeId(null)} onClick={() => chooseTree(tree)}>
+            aria-pressed={tree.id === selectedId} onFocus={() => setHoveredTreeId(tree.id)} onBlur={() => setHoveredTreeId(null)} onClick={() => chooseTree(tree, true)}>
             <span className="tree-dot" style={{ backgroundColor: tree.id === selectedId ? TREE_COLORS.selected : TREE_COLORS.normal }} aria-hidden="true" />
             <span className="tree-list-copy">
               <strong>{tree.name}</strong>
@@ -920,7 +932,7 @@ export default function App() {
             </span>
           </button>
           <TreeFoliageThumbnail tree={tree} />
-          <button type="button" className="focus-tree-button" onFocus={() => setHoveredTreeId(tree.id)} onBlur={() => setHoveredTreeId(null)} onClick={() => focusTree(tree)} aria-label={`Centrer la carte sur ${tree.name}`}>⌖</button>
+          <button type="button" className="focus-tree-button" onFocus={() => setHoveredTreeId(tree.id)} onBlur={() => setHoveredTreeId(null)} onClick={() => focusTree(tree, true)} aria-label={`Centrer la carte sur ${tree.name}`}>⌖</button>
         </div>
       )) : <div className="empty-state"><LeafIcon /><p>Aucun arbre ne correspond à ces critères.</p><button className="text-button" onClick={clearFilters}>Effacer les filtres</button></div>}
     </div>}
@@ -946,7 +958,7 @@ export default function App() {
           <span className="sr-only">{isFullscreen ? "Quitter le mode plein écran" : "Activer le mode plein écran"}</span>
         </button>
       </header>
-      {selectedTree && <TreeDetail key={selectedTree.id} tree={selectedTree} rawFeature={data?.features.find((feature) => feature.id === selectedTree.id)} count={speciesStats.get(selectedTree.species)?.count ?? 1} onClose={closeDetail} onReturnToSearch={returnToSearch} isMobile={isMobile} />}
+      {selectedTree && <TreeDetail key={selectedTree.id} tree={selectedTree} rawFeature={data?.features.find((feature) => feature.id === selectedTree.id)} count={speciesStats.get(selectedTree.species)?.count ?? 1} onClose={closeDetail} onReturnToSearch={returnToSearchAvailable ? returnToSearch : undefined} isMobile={isMobile} />}
       {selectedLandmark && <LandmarkDetail landmark={selectedLandmark} onClose={closeLandmark} />}
       <nav className={`mobile-bottom-bar ${!mapSceneReady || mobilePanelOpen || selectedTree || selectedLandmark ? "is-hidden" : ""}`} aria-label="Navigation principale">
         <button ref={listTriggerRef} className="mobile-sheet-trigger" onClick={openMobilePanel}
