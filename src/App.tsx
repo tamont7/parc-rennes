@@ -18,7 +18,7 @@ function parkFromLocation(): ParkView {
   return new URLSearchParams(window.location.search).get("plan") === "thabor" ? "thabor" : "oberthur";
 }
 type MapViewMode = "2d" | "3d";
-type MobilePanelMode = "filter" | "list";
+type MobileSheetSnap = "low" | "medium" | "high";
 const WIKIPEDIA_SEARCH_URL = "https://fr.wikipedia.org/w/index.php?search=";
 const WIKIPEDIA_API_URL = "https://fr.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&origin=*&srsearch=";
 type TreeSort = "vernacular" | "scientific" | "count" | "height" | "crown";
@@ -116,6 +116,9 @@ function LeafIcon() {
 }
 function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>;
+}
+function SearchIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5" /><path d="m16 16 4.2 4.2" /></svg>;
 }
 function InfoIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 10.8v5.2M12 7.8h.01" /></svg>;
@@ -290,22 +293,16 @@ function TreeDetail({
       touchStartY.current !==
       null
     ) {
-      setDragOffset(
-        Math.max(
-          0,
-          event.clientY -
-          touchStartY.current,
-        ),
-      );
+      setDragOffset(event.clientY - touchStartY.current);
     }
   };
 
   const endSwipe =
     () => {
-      if (
-        dragOffset > 72
-      ) {
-        onClose();
+      if (dragOffset < -64 && isMobile) setDetailsOpen(true);
+      else if (dragOffset > 72) {
+        if (isMobile && detailsOpen) setDetailsOpen(false);
+        else onClose();
       }
 
       touchStartY.current =
@@ -316,13 +313,21 @@ function TreeDetail({
 
   return (
     <article
-      className={`tree-detail ${isMobile ? "is-mobile" : ""}`}
+      className={`tree-detail ${isMobile ? `is-mobile ${detailsOpen ? "is-mobile-expanded" : ""}` : ""}`}
       aria-labelledby="detail-title"
       style={{
         transform:
           `translateY(${dragOffset}px)`,
       }}
     >
+      {isMobile && <div
+        className="mobile-detail-handle"
+        aria-label="Faire glisser la fiche"
+        onPointerDown={beginSwipe}
+        onPointerMove={moveSwipe}
+        onPointerUp={endSwipe}
+        onPointerCancel={() => { touchStartY.current = null; setDragOffset(0); }}
+      ><i aria-hidden="true" /></div>}
       <div className="detail-topline" onPointerDown={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={() => { touchStartY.current = null; setDragOffset(0); }}>
         <h2
           id="detail-title"
@@ -574,8 +579,9 @@ export default function App() {
   const [recenter, setRecenter] = useState(0);
   const [mapViewMode, setMapViewMode] = useState<MapViewMode>("3d");
   const [isParkTransitioning, setIsParkTransitioning] = useState(false);
+  const [mapSceneReady, setMapSceneReady] = useState(false);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
-  const [mobilePanelMode, setMobilePanelMode] = useState<MobilePanelMode>("filter");
+  const [mobileSheetSnap, setMobileSheetSnap] = useState<MobileSheetSnap>("low");
   const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapAreaRef = useRef<HTMLElement>(null);
@@ -619,6 +625,7 @@ export default function App() {
     setFocusTreeId(null);
     setHoveredTreeId(null);
     setMobilePanelOpen(false);
+    setMapSceneReady(false);
   }, [activePark, parkName]);
 
 
@@ -783,7 +790,8 @@ export default function App() {
   }, [selectedId, selectedLandmark, mobilePanelOpen, isMobile]);
 
   const chooseTree = (tree: Tree) => {
-    setFocusTreeId(null);
+    setFocusTreeId(tree.id);
+    setFocusRequest((request) => request + 1);
     setSelectedId(tree.id);
     setSelectedLandmark(null);
     setMobilePanelOpen(false);
@@ -831,25 +839,30 @@ export default function App() {
     url.searchParams.delete("plan");
     window.history.pushState({}, "", url);
   };
+  const sheetSnaps: MobileSheetSnap[] = ["low", "medium", "high"];
+  const moveMobileSheet = (direction: -1 | 1) => {
+    const nextIndex = sheetSnaps.indexOf(mobileSheetSnap) + direction;
+    if (nextIndex < 0) setMobilePanelOpen(false);
+    else if (nextIndex < sheetSnaps.length) setMobileSheetSnap(sheetSnaps[nextIndex]);
+  };
   const beginExplorerSwipe = (event: PointerEvent<HTMLElement>) => {
-    if (event.pointerType === "touch") explorerTouchStartY.current = event.clientY;
+    if (event.pointerType === "touch") {
+      explorerTouchStartY.current = event.clientY;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
   };
   const moveExplorerSwipe = (event: PointerEvent<HTMLElement>) => {
     if (explorerTouchStartY.current !== null) setExplorerDragOffset(event.clientY - explorerTouchStartY.current);
   };
   const endExplorerSwipe = () => {
-    if (explorerDragOffset > 72) {
-      if (mobilePanelMode === "list") setMobilePanelMode("filter");
-      else setMobilePanelOpen(false);
-    } else if (explorerDragOffset < -72 && mobilePanelMode === "filter") {
-      setMobilePanelMode("list");
-    }
+    if (explorerDragOffset > 72) moveMobileSheet(-1);
+    else if (explorerDragOffset < -72) moveMobileSheet(1);
     explorerTouchStartY.current = null;
     setExplorerDragOffset(0);
   };
   const hasFilters = Boolean(query || speciesSort !== "vernacular");
-  const openMobilePanel = (mode: MobilePanelMode) => {
-    setMobilePanelMode(mode);
+  const openMobilePanel = () => {
+    setMobileSheetSnap("low");
     setMobilePanelOpen(true);
   };
   const openInfo = () => {
@@ -870,7 +883,7 @@ export default function App() {
       <div className="search-field">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5" /><path d="m16 16 4.2 4.2" /></svg>
         <label className="sr-only" htmlFor="tree-search">Rechercher un arbre ou une espèce</label>
-        <input id="tree-search" ref={searchRef} type="search" enterKeyHint="done" value={query} aria-controls="species-suggestions" aria-expanded={showSpeciesSuggestions} onFocus={() => setSearchSuggestionsOpen(true)} onBlur={() => window.setTimeout(() => setSearchSuggestionsOpen(false), 120)} onChange={(event) => updateSearch(event.target.value)} onKeyDown={(event) => { if (isMobile && event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); setSearchSuggestionsOpen(false); setMobilePanelOpen(false); } }} placeholder="Arbre ou espèce…" />
+        <input id="tree-search" ref={searchRef} type="search" enterKeyHint="done" value={query} aria-controls="species-suggestions" aria-expanded={showSpeciesSuggestions} onFocus={() => { setSearchSuggestionsOpen(true); if (isMobile) setMobileSheetSnap("high"); }} onBlur={() => window.setTimeout(() => setSearchSuggestionsOpen(false), 120)} onChange={(event) => updateSearch(event.target.value)} onKeyDown={(event) => { if (isMobile && event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); setSearchSuggestionsOpen(false); setMobilePanelOpen(false); } }} placeholder="Arbre ou espèce…" />
         {query && <button type="button" className="search-clear" onMouseDown={(event) => event.preventDefault()} onClick={clearSearch} aria-label="Effacer la recherche"><CloseIcon /></button>}
       </div>
       {showSpeciesSuggestions && <div className="species-suggestions" id="species-suggestions" aria-label="Suggestions d’espèces">
@@ -881,13 +894,13 @@ export default function App() {
     </div>
     <div className="filters">
       <SpeciesPicker options={speciesOptions} selectedTaxon={selectedSpecies} sort={speciesSort} onSelect={chooseSpecies} />
-      {(!isMobile || mobilePanelMode === "list") && <TreeSortPicker sort={speciesSort} onChange={changeTreeSort} />}
+      {(!isMobile || mobileSheetSnap !== "low") && <TreeSortPicker sort={speciesSort} onChange={changeTreeSort} />}
     </div>
     <div className="results-heading">
       <p role="status">{data ? `${visibleTrees.length} / ${trees.length} arbres` : dataError ? "Données indisponibles" : "Chargement des arbres…"}</p>
       {hasFilters && <button className="text-button" onClick={clearFilters}>Réinitialiser</button>}
     </div>
-    {(!isMobile || mobilePanelMode === "list") && <div className={`tree-list ${isParkTransitioning ? "is-park-transitioning" : ""}`} ref={listRef} aria-busy={!data && !dataError}>
+    {(!isMobile || mobileSheetSnap !== "low") && <div className={`tree-list ${isParkTransitioning ? "is-park-transitioning" : ""}`} ref={listRef} aria-busy={!data && !dataError}>
       {dataError ? <div className="empty-state" role="alert">
         <p>Les données n’ont pas pu être chargées.</p>
         <button onClick={() => setDataAttempt((value) => value + 1)}>Réessayer les données</button>
@@ -911,7 +924,7 @@ export default function App() {
         </div>
       )) : <div className="empty-state"><LeafIcon /><p>Aucun arbre ne correspond à ces critères.</p><button className="text-button" onClick={clearFilters}>Effacer les filtres</button></div>}
     </div>}
-    {(!isMobile || mobilePanelMode === "list") && <footer className="panel-footer">
+    {(!isMobile || mobileSheetSnap === "high") && <footer className="panel-footer">
       <button className="info-button" onClick={openInfo} aria-haspopup="dialog" aria-label="Informations sur les données"><InfoIcon /></button>
     </footer>}
   </>;
@@ -920,7 +933,7 @@ export default function App() {
     <section ref={mapAreaRef} className={`map-area ${isParkTransitioning ? "is-transitioning" : ""}`} aria-label="Carte et fiche arbre">
       <MapBoundary key={mapAttempt} onRetry={() => setMapAttempt((value) => value + 1)}>
         <Suspense fallback={<MapSceneLoading />}>
-          <MapView trees={trees} plan={plan} parkId={activePark} isParkTransitioning={isParkTransitioning} onSceneReady={() => setIsParkTransitioning(false)} visibleTrees={mapVisibleTrees} interactiveTrees={visibleTrees} selectedTree={selectedTree} focusTreeId={focusTreeId} focusRequest={focusRequest} viewMode={mapViewMode} onChangeViewMode={() => setMapViewMode((mode) => mode === "3d" ? "2d" : "3d")} isMobile={isMobile} hoveredTreeId={hoveredTreeId} onSelectTree={chooseTree} onSelectLandmark={chooseLandmark} onRecenter={() => setRecenter((value) => value + 1)} recenter={recenter} />
+          <MapView trees={trees} plan={plan} parkId={activePark} isParkTransitioning={isParkTransitioning} onSceneReady={() => { setIsParkTransitioning(false); setMapSceneReady(true); }} visibleTrees={mapVisibleTrees} interactiveTrees={visibleTrees} selectedTree={selectedTree} focusTreeId={focusTreeId} focusRequest={focusRequest} viewMode={mapViewMode} onChangeViewMode={() => setMapViewMode((mode) => mode === "3d" ? "2d" : "3d")} isMobile={isMobile} hoveredTreeId={hoveredTreeId} onSelectTree={chooseTree} onSelectLandmark={chooseLandmark} onRecenter={() => setRecenter((value) => value + 1)} recenter={recenter} />
         </Suspense>
       </MapBoundary>
       <header className="map-header">
@@ -928,6 +941,9 @@ export default function App() {
           <img className="brand-mark" src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" />
         </button>
         <ParkPicker parkId={activePark} name={parkName} onChange={changePark} />
+        <button type="button" className={`mobile-search-button ${mapSceneReady ? "" : "is-hidden"}`} onClick={openMobilePanel} aria-label="Rechercher un arbre">
+          <SearchIcon />
+        </button>
         <button type="button" className="fullscreen-toggle" onClick={toggleFullscreen} aria-pressed={isFullscreen} aria-label={isFullscreen ? "Quitter le mode plein écran" : "Activer le mode plein écran"}>
           <FullscreenIcon active={isFullscreen} />
           <span className="sr-only">{isFullscreen ? "Quitter le mode plein écran" : "Activer le mode plein écran"}</span>
@@ -935,18 +951,21 @@ export default function App() {
       </header>
       {selectedTree && <TreeDetail key={selectedTree.id} tree={selectedTree} rawFeature={data?.features.find((feature) => feature.id === selectedTree.id)} count={speciesStats.get(selectedTree.species)?.count ?? 1} onClose={closeDetail} isMobile={isMobile} />}
       {selectedLandmark && <LandmarkDetail landmark={selectedLandmark} onClose={closeLandmark} />}
-      <button ref={listTriggerRef} className={`mobile-sheet-trigger ${selectedTree ? "is-hidden" : ""}`} onClick={() => openMobilePanel("filter")}
+      <nav className={`mobile-bottom-bar ${!mapSceneReady || mobilePanelOpen || selectedTree || selectedLandmark ? "is-hidden" : ""}`} aria-label="Navigation principale">
+        <button ref={listTriggerRef} className="mobile-sheet-trigger" onClick={openMobilePanel}
         aria-haspopup="dialog" aria-expanded={mobilePanelOpen} aria-controls="mobile-explorer">
-        {data ? hasFilters ? `${visibleTrees.length} résultats · Modifier` : `Explorer les ${visibleTrees.length} arbres` : "Explorer les arbres"} <span aria-hidden="true">↑</span>
-      </button>
+          <LeafIcon /><span>Explorer</span>
+        </button>
+      </nav>
     </section>
-    {isMobile ? <dialog id="mobile-explorer" className={`explorer-panel is-mobile-${mobilePanelMode}`} ref={dialogRef} aria-label={mobilePanelMode === "filter" ? "Filtrer les arbres" : "Liste des arbres"} tabIndex={-1} style={{ transform: `translateY(${explorerDragOffset}px)` }}
+    {isMobile ? <dialog id="mobile-explorer" className={`explorer-panel is-mobile-${mobileSheetSnap}`} ref={dialogRef} aria-label="Explorer les arbres" tabIndex={-1} style={{ transform: `translateY(${explorerDragOffset}px)` }}
       onCancel={(event) => { event.preventDefault(); setMobilePanelOpen(false); }}
-      onClose={() => setMobilePanelOpen(false)}><div className={`mobile-panel-handle is-${mobilePanelMode}`} onPointerDown={beginExplorerSwipe} onPointerMove={moveExplorerSwipe} onPointerUp={endExplorerSwipe} onPointerCancel={endExplorerSwipe}>
-        <button type="button" className="mobile-panel-direction is-map" aria-label="Revenir à la carte" onClick={() => setMobilePanelOpen(false)}><i aria-hidden="true" /><span>Carte</span><i aria-hidden="true" /></button>
-        <button type="button" className="mobile-panel-direction is-list" aria-label="Agrandir vers la liste des arbres" disabled={mobilePanelMode === "list"} onClick={() => setMobilePanelMode("list")}><i aria-hidden="true" /><span>Liste</span><i aria-hidden="true" /></button>
+      onClose={() => setMobilePanelOpen(false)} onClick={(event) => {
+        if (mobileSheetSnap === "low" && event.target === event.currentTarget) setMobileSheetSnap("high");
+      }}><div className={`mobile-panel-handle is-${mobileSheetSnap}`} onPointerDown={beginExplorerSwipe} onPointerMove={moveExplorerSwipe} onPointerUp={endExplorerSwipe} onPointerCancel={endExplorerSwipe}>
+        <i aria-hidden="true" />
       </div>
-      {mobilePanelMode === "list" && <div className="mobile-panel-title"><div><strong>Liste des arbres</strong></div><button type="button" className="text-button" onClick={() => setMobilePanelMode("filter")}>Modifier le filtre</button></div>}{explorer}</dialog>
+      {mobileSheetSnap !== "low" && <div className="mobile-panel-title"><div><strong>{mobileSheetSnap === "medium" ? "Aperçu des arbres" : "Explorer les arbres"}</strong></div><button type="button" className="text-button" onClick={() => moveMobileSheet(-1)}>Réduire</button></div>}{explorer}</dialog>
       : <aside className="explorer-panel" aria-label="Liste des arbres">{explorer}</aside>}
     <dialog className="info-dialog" ref={infoDialogRef} aria-labelledby="info-title" onClose={() => setInfoOpen(false)}>
       <div className="info-dialog-topline">

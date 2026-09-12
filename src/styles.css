@@ -174,7 +174,7 @@ h1 { margin-bottom: 0; color: #17372c; font-family: "Fraunces", Georgia, serif; 
 .tree-facts dt { margin-bottom: 4px; color: #788e82; font-family: "DM Mono", monospace; font-size: 8px; letter-spacing: .035em; text-transform: uppercase; }
 .tree-facts dd { margin: 0; color: #244a39; font-size: 11px; font-weight: 700; line-height: 1.2; }
 .demo-disclaimer { margin: 0; color: #829388; font-size: 9px; line-height: 1.35; }
-.mobile-sheet-trigger, .mobile-close-panel, .mobile-panel-handle, .mobile-panel-title { display: none; }
+.mobile-sheet-trigger, .mobile-bottom-bar, .mobile-close-panel, .mobile-panel-handle, .mobile-panel-title, .mobile-detail-handle { display: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; }
 
 @media (max-width: 760px) {
@@ -360,6 +360,87 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Volet mobile : les trois hauteurs correspondent aux ancrages Google Maps.
+   La barre reste volontairement indépendante du volet afin de disparaître dès
+   son ouverture, quelle que soit sa hauteur. */
+@media (max-width: 760px) {
+  .mobile-bottom-bar {
+    position: fixed;
+    z-index: 12;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    padding: 8px 20px max(10px, env(safe-area-inset-bottom));
+    background: rgb(255 255 255 / .96);
+    box-shadow: 0 -3px 18px rgb(20 50 38 / .13);
+    transform: translateY(0);
+    transition: transform .24s cubic-bezier(.2, .8, .2, 1), opacity .18s ease;
+  }
+  .mobile-bottom-bar.is-hidden { opacity: 0; pointer-events: none; transform: translateY(110%); }
+  .mobile-bottom-bar .mobile-sheet-trigger {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 42px;
+    border: 0;
+    padding: 7px 20px;
+    color: #1e503c;
+    background: transparent;
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 750;
+    transform: none;
+  }
+  .mobile-bottom-bar .mobile-sheet-trigger svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+  /* La barre basse occupe la zone des contrôles de carte uniquement lorsqu'elle
+     est visible : on leur réserve donc cet espace au repos. */
+  .map-navigation { bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .map-legend { bottom: calc(126px + env(safe-area-inset-bottom)); }
+  .map-credits { bottom: calc(58px + env(safe-area-inset-bottom)); }
+  .explorer-panel { border-radius: 28px 28px 0 0; transition: height .28s cubic-bezier(.2, .8, .2, 1), transform .16s ease-out; }
+  .explorer-panel.is-mobile-low { height: 15dvh; min-height: 112px; }
+  .explorer-panel.is-mobile-medium { height: 50dvh; }
+  .explorer-panel.is-mobile-high { height: 90dvh; max-height: 90dvh; }
+  .mobile-panel-handle { display: flex; align-items: center; justify-content: center; height: 32px; margin: 0; touch-action: none; }
+  .mobile-panel-handle > i { display: block; width: 38px; height: 4px; border-radius: 4px; background: #aebdb3; }
+  .mobile-panel-direction { display: none; }
+  .mobile-panel-title { min-height: 28px; padding: 0 22px 6px; }
+  .explorer-panel .species-suggestions {
+    position: absolute;
+    top: auto;
+    right: 22px;
+    bottom: calc(100% + 8px);
+    left: 22px;
+    margin: 0;
+    max-height: min(55dvh, 360px);
+    overscroll-behavior: contain;
+  }
+  .explorer-panel.is-mobile-low .filters { display: none; }
+  .explorer-panel.is-mobile-low .results-heading { display: none; }
+  .explorer-panel.is-mobile-low .search-field { margin-bottom: 8px; }
+  .tree-detail.is-mobile {
+    z-index: 11;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: none;
+    height: 50dvh;
+    border: 0;
+    border-radius: 28px 28px 0 0;
+    padding: 20px 18px max(18px, env(safe-area-inset-bottom));
+    box-shadow: 0 -10px 30px rgba(20, 50, 38, .17);
+    transition: height .28s cubic-bezier(.2, .8, .2, 1), transform .16s ease-out;
+  }
+  .mobile-detail-handle { display: flex; align-items: center; justify-content: center; height: 18px; margin: -10px 0 5px; touch-action: none; }
+  .mobile-detail-handle > i { display: block; width: 38px; height: 4px; border-radius: 4px; background: #aebdb3; }
+  .tree-detail.is-mobile.is-mobile-expanded { height: 90dvh; overflow: auto; }
+  .map-navigation.is-tree-open { bottom: calc(52dvh + env(safe-area-inset-bottom)); }
+  .map-area:has(.tree-detail.is-mobile-expanded) .map-navigation { display: none; }
 }
 
 .tree-foliage.is-leaf-only { width: 43px; }
