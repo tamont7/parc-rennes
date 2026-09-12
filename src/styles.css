@@ -1540,6 +1540,11 @@ h1 {
   }
 
   .explorer-panel {
+    /* Un <dialog> conserve un padding utilisateur-agent si on ne le remet pas
+       explicitement à zéro. Chrome Android peut aussi renvoyer un inset bas
+       fantôme : comme la barre basse, on ne le réserve que sur iOS. */
+    --mobile-panel-safe-area: 0px;
+
     position: fixed;
     z-index: 10;
     inset: auto 0 0;
@@ -1550,6 +1555,7 @@ h1 {
     max-height: 90dvh;
     border: 0;
     border-radius: 20px 20px 0 0;
+    padding: 0;
     box-shadow: 0 -10px 30px rgba(20, 50, 38, .17);
     transition: transform .16s ease-out;
   }
@@ -1591,6 +1597,10 @@ h1 {
 
   .explorer-panel::backdrop {
     background: rgb(17 42 31 / .3);
+  }
+
+  .explorer-panel .panel-footer {
+    padding-bottom: max(12px, var(--mobile-panel-safe-area));
   }
 
   .mobile-panel-handle {
@@ -2815,6 +2825,12 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   .explorer-panel.is-mobile-high {
     height: 90dvh;
     max-height: 90dvh;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .explorer-panel {
+      --mobile-panel-safe-area: env(safe-area-inset-bottom);
+    }
   }
 
   .mobile-panel-handle {
