@@ -338,10 +338,18 @@ function setParkView(
   viewer: Viewer,
   bounds: readonly number[],
   viewMode: "2d" | "3d" = "3d",
+  mobileOberthurFraming = false,
 ) {
   const [west, south, east, north] = bounds;
-  const centre = Cartesian3.fromDegrees((west + east) / 2, (south + north) / 2);
-  const range = getParkViewRange(viewer, bounds);
+  /*
+   * Sur mobile, les contrôles occupent le côté droit. On vise donc un point
+   * légèrement à l'est du centre : le parc apparaît un peu à gauche, tout en
+   * gardant l'ensemble de l'emprise lisible avec un cadrage plus rapproché.
+   */
+  const longitude = (west + east) / 2 + (mobileOberthurFraming ? (east - west) * 0.12 : 0);
+  const latitude = (south + north) / 2 - (mobileOberthurFraming ? (north - south) * 0.08 : 0);
+  const centre = Cartesian3.fromDegrees(longitude, latitude);
+  const range = getParkViewRange(viewer, bounds) * (mobileOberthurFraming ? 0.72 : 1);
 
   viewer.camera.lookAt(
     centre,
@@ -2047,6 +2055,8 @@ export default function MapView(
         viewer,
         plan?.bbox ??
         PARK_PLAN_BOUNDS,
+        "3d",
+        isMobile && parkId === "oberthur",
       );
 
       let firstFrame =
@@ -3816,7 +3826,12 @@ export default function MapView(
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer) return;
-    setParkView(viewer, plan?.bbox ?? PARK_PLAN_BOUNDS, viewMode);
+    setParkView(
+      viewer,
+      plan?.bbox ?? PARK_PLAN_BOUNDS,
+      viewMode,
+      isMobile && parkId === "oberthur",
+    );
     viewer.scene.requestRender();
   }, [plan, revision]);
 
@@ -3881,6 +3896,7 @@ export default function MapView(
       plan?.bbox ??
       PARK_PLAN_BOUNDS,
       viewMode,
+      isMobile && parkId === "oberthur",
     );
 
     viewer.scene.requestRender();
@@ -3888,6 +3904,8 @@ export default function MapView(
     recenter,
     plan,
     viewMode,
+    isMobile,
+    parkId,
   ]);
 
   const changeZoom = (direction: "in" | "out") => {
