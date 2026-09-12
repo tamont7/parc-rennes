@@ -1968,8 +1968,43 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   right: 20px;
   bottom: 34px;
   display: grid;
+  grid-template-areas:
+    ". . locate"
+    ". . compass"
+    "dimension recenter zoom";
+  grid-template-columns: repeat(3, 36px);
+  grid-template-rows: auto auto auto;
+  column-gap: 6px;
+  row-gap: 8px;
+  align-items: end;
   justify-items: center;
-  gap: 8px;
+}
+
+.map-navigation .map-locate-button {
+  grid-area: locate;
+}
+
+.map-navigation .map-compass {
+  grid-area: compass;
+}
+
+.map-navigation .map-dimension-button {
+  position: static;
+  grid-area: dimension;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: #527164;
+  background: rgb(255 255 255 / .96);
+}
+
+.map-navigation .map-recenter-button {
+  position: static;
+  grid-area: recenter;
+}
+
+.map-navigation .map-zoom-controls {
+  grid-area: zoom;
 }
 
 .map-zoom-controls {
@@ -2595,21 +2630,11 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   .map-navigation {
     right: 16px;
     bottom: calc(16px + env(safe-area-inset-bottom));
-    grid-template-areas:
-      ". . locate"
-      ". . compass"
-      "dimension recenter zoom";
-    grid-template-columns: repeat(3, 36px);
-    grid-template-rows: auto auto auto;
-    column-gap: 6px;
-    row-gap: 8px;
-    align-items: end;
-    justify-items: center;
   }
 
-  /* Le groupe s'aligne sur le bord supérieur de la barre basse. */
+  /* Une petite gouttière sépare le groupe du bord supérieur de la barre basse. */
   .map-area:has(.mobile-bottom-bar:not(.is-hidden)) .map-navigation {
-    bottom: calc(56px + env(safe-area-inset-bottom));
+    bottom: calc(64px + env(safe-area-inset-bottom));
   }
 
   /* La navigation reste juste au-dessus de la fiche résumée. */
@@ -2768,34 +2793,6 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 1.8;
-  }
-
-  /* Raccourcis d'échelle réunis sur une même grille : 3D, recadrage, zoom. */
-  .map-navigation .map-locate-button {
-    grid-area: locate;
-  }
-
-  .map-navigation .map-compass {
-    grid-area: compass;
-  }
-
-  .map-navigation .map-dimension-button {
-    position: static;
-    grid-area: dimension;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    color: #527164;
-    background: rgb(255 255 255 / .96);
-  }
-
-  .map-navigation .map-recenter-button {
-    position: static;
-    grid-area: recenter;
-  }
-
-  .map-navigation .map-zoom-controls {
-    grid-area: zoom;
   }
 
   .map-legend {
