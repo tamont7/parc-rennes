@@ -312,7 +312,7 @@ function TreeDetail({
 
   return (
     <article
-      className={`tree-detail ${isMobile ? `is-mobile ${detailsOpen ? "is-mobile-expanded" : ""}` : ""}`}
+      className={`tree-detail ${detailsOpen ? "is-expanded" : ""} ${isMobile ? `is-mobile ${detailsOpen ? "is-mobile-expanded" : ""}` : ""}`}
       aria-labelledby="detail-title"
       style={{
         transform:
