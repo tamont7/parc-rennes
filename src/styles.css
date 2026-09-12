@@ -313,6 +313,18 @@ button {
   box-shadow: 4px 0 24px rgba(20, 50, 38, .06);
 }
 
+/* Le volet reste visible pendant le chargement, mais ses filtres et actions
+   attendent que la scène soit prête pour ne pas déclencher de reconstruction. */
+.explorer-panel.is-map-loading {
+  cursor: progress;
+}
+
+.explorer-panel.is-map-loading > * {
+  pointer-events: none;
+  user-select: none;
+  opacity: .55;
+}
+
 .panel-heading {
   display: flex;
   align-items: flex-start;
@@ -1257,6 +1269,22 @@ h1 {
 
   .tree-detail:not(.is-mobile) .detail-footer .detail-toggle:hover,
   .tree-detail:not(.is-mobile) .detail-footer .detail-toggle:focus-visible {
+    color: #527164;
+    text-decoration-color: currentColor;
+  }
+
+  .tree-detail:not(.is-mobile) .desktop-detail-collapse {
+    display: block;
+    margin: 10px auto 0;
+    padding: 2px 5px;
+    color: #8a9c91;
+    font-size: 9px;
+    font-weight: 500;
+    text-decoration-color: transparent;
+  }
+
+  .tree-detail:not(.is-mobile) .desktop-detail-collapse:hover,
+  .tree-detail:not(.is-mobile) .desktop-detail-collapse:focus-visible {
     color: #527164;
     text-decoration-color: currentColor;
   }

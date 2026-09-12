@@ -2459,6 +2459,7 @@ export default function MapView(
       );
 
       setPhase("error");
+      onSceneReadyRef.current();
     }
 
     return () => {

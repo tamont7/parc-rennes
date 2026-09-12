@@ -181,9 +181,10 @@ function dateLabel(value: string | null) {
   return value ? new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC" }).format(new Date(value)) : "Non renseignée";
 }
 
-class MapBoundary extends Component<{ children: ReactNode; onRetry: () => void }, { failed: boolean }> {
+class MapBoundary extends Component<{ children: ReactNode; onRetry: () => void; onFailure: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch() { this.props.onFailure(); }
   render() {
     return this.state.failed ? <div className="map-notice" role="alert">
       <p>La carte n’a pas pu démarrer. La liste et les fiches restent disponibles.</p>
@@ -414,13 +415,13 @@ function TreeDetail({
 
       <div className="detail-footer">
         <TreeFoliage tree={tree} />
-        <button
+        {(!detailsOpen || isMobile) && <button
           className="detail-toggle"
           onClick={() => setDetailsOpen((open) => !open)}
           aria-expanded={detailsOpen}
         >
           {detailsOpen ? "Réduire" : "Détails"}
-        </button>
+        </button>}
       </div>
       {isMobile && onReturnToSearch && <button type="button" className="mobile-return-to-search" onClick={onReturnToSearch} aria-label="Retour à la recherche" title="Retour à la recherche">
         <svg className="mobile-return-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
@@ -535,6 +536,13 @@ function TreeDetail({
           <button type="button" className="detail-toggle raw-data-toggle" aria-haspopup="dialog" onClick={() => rawDialogRef.current?.showModal()}>Données brutes</button>
         </div>
       )}
+      {detailsOpen && !isMobile && <button
+        className="detail-toggle desktop-detail-collapse"
+        onClick={() => setDetailsOpen(false)}
+        aria-expanded="true"
+      >
+        Réduire
+      </button>}
       <dialog ref={rawDialogRef} className="info-dialog raw-data-dialog" aria-labelledby="raw-data-title" onKeyDown={(event) => event.stopPropagation()}>
         <div className="info-dialog-topline">
           <h2 id="raw-data-title">Données brutes</h2>
@@ -965,7 +973,14 @@ export default function App() {
 
   return <main className="app-shell">
     <section ref={mapAreaRef} className={`map-area ${isParkTransitioning ? "is-transitioning" : ""}`} aria-label="Carte et fiche arbre">
-      <MapBoundary key={mapAttempt} onRetry={() => setMapAttempt((value) => value + 1)}>
+      <MapBoundary
+        key={mapAttempt}
+        onRetry={() => {
+          setMapSceneReady(false);
+          setMapAttempt((value) => value + 1);
+        }}
+        onFailure={() => setMapSceneReady(true)}
+      >
         <Suspense fallback={<MapSceneLoading />}>
           <MapView trees={trees} plan={plan} parkId={activePark} isParkTransitioning={isParkTransitioning} onSceneReady={() => { setIsParkTransitioning(false); setMapSceneReady(true); }} visibleTrees={mapVisibleTrees} interactiveTrees={visibleTrees} selectedTree={selectedTree} focusTreeId={focusTreeId} focusRequest={focusRequest} viewMode={mapViewMode} onChangeViewMode={() => setMapViewMode((mode) => mode === "3d" ? "2d" : "3d")} isMobile={isMobile} isMobilePanelOpen={mobilePanelOpen} hoveredTreeId={hoveredTreeId} onSelectTree={chooseTree} onSelectLandmark={chooseLandmark} onRecenter={() => setRecenter((value) => value + 1)} recenter={recenter} />
         </Suspense>
@@ -1004,7 +1019,12 @@ export default function App() {
           <button type="button" className="icon-button mobile-close-panel" onClick={() => setMobilePanelOpen(false)} aria-label="Fermer l’explorateur"><CloseIcon /></button>
         </div>
       </div>{explorer}</dialog>
-      : <aside className="explorer-panel" aria-label="Liste des arbres">{explorer}</aside>}
+      : <aside
+        className={`explorer-panel ${!mapSceneReady ? "is-map-loading" : ""}`}
+        aria-label="Liste des arbres"
+        aria-busy={!mapSceneReady}
+        {...(!mapSceneReady ? { inert: "" } : {})}
+      >{explorer}</aside>}
     <dialog className="info-dialog" ref={infoDialogRef} aria-labelledby="info-title" onClose={() => setInfoOpen(false)}>
       <div className="info-dialog-topline">
         <div><p className="eyebrow">Informations</p><h2 id="info-title">Données et sources</h2></div>
