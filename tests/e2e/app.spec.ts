@@ -60,7 +60,7 @@ test("carte, crédits, filtres, fiche et recentrage", async ({ page, isMobile },
   await expect(page.getByRole("link", { name: "Ouvrir le premier résultat Wikipédia pour Acer japonicum" })).toHaveAttribute("href", "https://fr.wikipedia.org/w/index.php?search=Acer%20japonicum");
   await expect(page.locator(".tree-detail")).toContainText("Non renseigné");
   await page.getByRole("button", { name: "Détails" }).click();
-  await expect(page.locator(".tree-detail")).toContainText("GPS :");
+  await expect(page.locator(".coordinates")).toContainText("48.");
   if (isMobile) await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("tree.png") });
   await page.getByRole("button", { name: "Fermer la fiche" }).click();
@@ -84,6 +84,26 @@ test("panneau mobile modal, clavier et retour du focus", async ({ page, isMobile
   await expect(page.getByRole("button", { name: /Explorer les|résultats/ })).toBeFocused();
   await page.setViewportSize({ width: 1200, height: 800 });
   await expect(page.getByRole("searchbox")).toBeVisible();
+});
+
+test("la croix ferme le volet mobile, y compris au format compact", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "Interaction propre au mobile");
+  await page.goto("/");
+  await page.getByRole("button", { name: /Explorer les|résultats/ }).click();
+  await expect(page.getByRole("button", { name: "Fermer l’explorateur" })).toBeVisible();
+  await page.getByRole("button", { name: "Fermer l’explorateur" }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+});
+
+test("un tap hors du volet mobile le ferme et rend la carte", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "Interaction propre au mobile");
+  await page.goto("/");
+  await expect(page.locator(".cesium-map")).toHaveAttribute("data-map-state", "ready");
+  await page.getByRole("button", { name: "Explorer" }).click();
+  await expect(page.locator("#mobile-explorer")).toBeVisible();
+  await page.mouse.click(12, 12);
+  await expect(page.locator("#mobile-explorer")).not.toBeVisible();
+  await expect(page.locator(".cesium-map")).toBeVisible();
 });
 
 test("erreur des données puis récupération", async ({ page, isMobile }) => {

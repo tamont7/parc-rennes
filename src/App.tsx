@@ -117,9 +117,6 @@ function LeafIcon() {
 function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>;
 }
-function SearchIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5" /><path d="m16 16 4.2 4.2" /></svg>;
-}
 function InfoIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 10.8v5.2M12 7.8h.01" /></svg>;
 }
@@ -425,12 +422,6 @@ function TreeDetail({
               </p>
             )}
 
-          <p className="tree-reference">
-            Référence{" "}
-            {tree.managementId ??
-              tree.sourceId}
-          </p>
-
           {tree.photoUrl && (
             <img
               className="tree-photo"
@@ -516,7 +507,6 @@ function TreeDetail({
           </dl>
 
           <p className="coordinates">
-            GPS :{" "}
             {tree.latitude.toFixed(
               6,
             )}
@@ -525,7 +515,7 @@ function TreeDetail({
               6,
             )}
           </p>
-          <button type="button" className="detail-toggle" aria-haspopup="dialog" onClick={() => rawDialogRef.current?.showModal()}>Données brutes</button>
+          <button type="button" className="detail-toggle raw-data-toggle" aria-haspopup="dialog" onClick={() => rawDialogRef.current?.showModal()}>Données brutes</button>
         </div>
       )}
       <dialog ref={rawDialogRef} className="info-dialog raw-data-dialog" aria-labelledby="raw-data-title" onKeyDown={(event) => event.stopPropagation()}>
@@ -862,7 +852,7 @@ export default function App() {
   };
   const hasFilters = Boolean(query || speciesSort !== "vernacular");
   const openMobilePanel = () => {
-    setMobileSheetSnap("low");
+    setMobileSheetSnap("high");
     setMobilePanelOpen(true);
   };
   const openInfo = () => {
@@ -941,9 +931,6 @@ export default function App() {
           <img className="brand-mark" src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" />
         </button>
         <ParkPicker parkId={activePark} name={parkName} onChange={changePark} />
-        <button type="button" className={`mobile-search-button ${mapSceneReady ? "" : "is-hidden"}`} onClick={openMobilePanel} aria-label="Rechercher un arbre">
-          <SearchIcon />
-        </button>
         <button type="button" className="fullscreen-toggle" onClick={toggleFullscreen} aria-pressed={isFullscreen} aria-label={isFullscreen ? "Quitter le mode plein écran" : "Activer le mode plein écran"}>
           <FullscreenIcon active={isFullscreen} />
           <span className="sr-only">{isFullscreen ? "Quitter le mode plein écran" : "Activer le mode plein écran"}</span>
@@ -961,11 +948,18 @@ export default function App() {
     {isMobile ? <dialog id="mobile-explorer" className={`explorer-panel is-mobile-${mobileSheetSnap}`} ref={dialogRef} aria-label="Explorer les arbres" tabIndex={-1} style={{ transform: `translateY(${explorerDragOffset}px)` }}
       onCancel={(event) => { event.preventDefault(); setMobilePanelOpen(false); }}
       onClose={() => setMobilePanelOpen(false)} onClick={(event) => {
-        if (mobileSheetSnap === "low" && event.target === event.currentTarget) setMobileSheetSnap("high");
+        // Sur un dialogue modal, un clic sur le backdrop remonte au dialogue.
+        // Il doit donc fermer le volet plutôt que changer sa hauteur.
+        if (event.target === event.currentTarget) setMobilePanelOpen(false);
       }}><div className={`mobile-panel-handle is-${mobileSheetSnap}`} onPointerDown={beginExplorerSwipe} onPointerMove={moveExplorerSwipe} onPointerUp={endExplorerSwipe} onPointerCancel={endExplorerSwipe}>
         <i aria-hidden="true" />
       </div>
-      {mobileSheetSnap !== "low" && <div className="mobile-panel-title"><div><strong>{mobileSheetSnap === "medium" ? "Aperçu des arbres" : "Explorer les arbres"}</strong></div><button type="button" className="text-button" onClick={() => moveMobileSheet(-1)}>Réduire</button></div>}{explorer}</dialog>
+      <div className={`mobile-panel-title is-${mobileSheetSnap}`}>
+        <div><strong>{mobileSheetSnap === "medium" ? "Aperçu des arbres" : "Explorer les arbres"}</strong></div>
+        <div className="mobile-panel-actions">
+          <button type="button" className="icon-button mobile-close-panel" onClick={() => setMobilePanelOpen(false)} aria-label="Fermer l’explorateur"><CloseIcon /></button>
+        </div>
+      </div>{explorer}</dialog>
       : <aside className="explorer-panel" aria-label="Liste des arbres">{explorer}</aside>}
     <dialog className="info-dialog" ref={infoDialogRef} aria-labelledby="info-title" onClose={() => setInfoOpen(false)}>
       <div className="info-dialog-topline">

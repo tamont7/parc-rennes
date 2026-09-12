@@ -1732,6 +1732,48 @@ export default function MapView(
     const treeToFocus = focusTreeId ? trees.find((tree) => tree.id === focusTreeId) ?? null : null;
     if (!viewer || !treeToFocus) return;
 
+    /*
+     * Sur petit écran, la sélection doit simplement déplacer le point visé.
+     * En recalculant une pose autour de l'arbre avec le cap, l'inclinaison et
+     * la distance courants, le vol ne change ni la rotation ni le zoom que
+     * l'utilisateur vient de choisir au geste.
+     */
+    if (isMobile) {
+      const camera = viewer.camera;
+      const canvasCentre = new Cartesian2(
+        viewer.scene.canvas.clientWidth / 2,
+        viewer.scene.canvas.clientHeight / 2,
+      );
+      const currentCentre = camera.pickEllipsoid(canvasCentre, viewer.scene.globe.ellipsoid);
+      const range = currentCentre
+        ? Cartesian3.distance(camera.positionWC, currentCentre)
+        : Math.max(12, camera.positionCartographic.height);
+      const target = Cartesian3.fromDegrees(treeToFocus.longitude, treeToFocus.latitude);
+      const offset = new HeadingPitchRange(camera.heading, camera.pitch, range);
+      const initialDestination = Cartesian3.clone(camera.positionWC);
+      const initialDirection = Cartesian3.clone(camera.directionWC);
+      const initialUp = Cartesian3.clone(camera.upWC);
+
+      camera.cancelFlight();
+      camera.lookAt(target, offset);
+      camera.lookAtTransform(Matrix4.IDENTITY);
+      const destination = Cartesian3.clone(camera.positionWC);
+      const direction = Cartesian3.clone(camera.directionWC);
+      const up = Cartesian3.clone(camera.upWC);
+      camera.setView({
+        destination: initialDestination,
+        orientation: { direction: initialDirection, up: initialUp },
+      });
+      camera.flyTo({
+        destination,
+        orientation: { direction, up },
+        duration: 0.55,
+        complete: () => setCompletedFocusRequest(focusRequest),
+      });
+
+      return () => camera.cancelFlight();
+    }
+
     const proportions = getTreeProportions(treeToFocus);
     const centre = Cartesian3.fromDegrees(
       treeToFocus.longitude,
@@ -1809,7 +1851,7 @@ export default function MapView(
       cancelled = true;
       viewer.camera.cancelFlight();
     };
-  }, [trees, focusTreeId, focusRequest, revision]);
+  }, [trees, focusTreeId, focusRequest, isMobile, revision]);
 
   /* Houppier temporairement rendu au premier plan lors d'un cadrage. */
   useEffect(() => {

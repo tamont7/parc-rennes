@@ -233,7 +233,14 @@ export function TreeFoliage({ tree }: { tree: Tree }) {
   const fruit = fruitForTaxon(taxon);
   return <>
     <button type="button" className={`tree-foliage${fruit ? "" : " is-leaf-only"}`} onClick={() => dialogRef.current?.showModal()} aria-label={`Agrandir la feuille${fruit ? " et le fruit" : ""} : ${taxon}`} aria-haspopup="dialog">
-      <LeafDrawing foliage={foliage} /><TreeFruit scientificName={taxon} />
+      <span className="tree-foliage-illustration">
+        <LeafDrawing foliage={foliage} />
+        <span className="tree-foliage-caption">{foliage.label}</span>
+      </span>
+      {fruit && <span className="tree-foliage-illustration">
+        <TreeFruit scientificName={taxon} />
+        <span className="tree-foliage-caption">{fruit.label}</span>
+      </span>}
     </button>
     {createPortal(<dialog className="botanical-dialog" ref={dialogRef} aria-labelledby={titleId}
       onKeyDown={(event) => { if (event.key === "Escape") event.stopPropagation(); }}

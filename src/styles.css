@@ -1164,6 +1164,11 @@ h1 {
   border-top: 1px solid #e4ebe3;
 }
 
+.raw-data-toggle {
+  display: block;
+  margin: 8px 0 0 auto;
+}
+
 .tree-foliage {
   display: flex;
   gap: 8px;
@@ -1184,6 +1189,14 @@ h1 {
   display: block;
   width: 43px;
   height: 48px;
+}
+
+.tree-foliage-illustration {
+  display: contents;
+}
+
+.tree-foliage-caption {
+  display: none;
 }
 
 .botanical-dialog {
@@ -1544,6 +1557,12 @@ h1 {
     font-size: 11px;
   }
 
+  .mobile-panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
   .panel-heading {
     padding: 14px 22px 13px;
   }
@@ -1554,6 +1573,8 @@ h1 {
 
   .mobile-close-panel {
     display: grid;
+    width: 32px;
+    height: 32px;
   }
 
   .search-field {
@@ -2634,12 +2655,25 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     padding: 0 22px 6px;
   }
 
+  .mobile-panel-title.is-low {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    right: 14px;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .mobile-panel-title.is-low>div:first-child {
+    display: none;
+  }
+
   .explorer-panel .species-suggestions {
     position: absolute;
 
-    top: auto;
+    top: calc(100% + 8px);
     right: 22px;
-    bottom: calc(100% + 8px);
+    bottom: auto;
     left: 22px;
 
     margin: 0;
@@ -2667,7 +2701,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     left: 0;
 
     width: 100%;
-    height: 50dvh;
+    height: max(15dvh, 180px);
     max-height: none;
 
     border: 0;
@@ -2680,6 +2714,103 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     transition:
       height .28s cubic-bezier(.2, .8, .2, 1),
       transform .16s ease-out;
+  }
+
+  .tree-detail.is-mobile .detail-footer .detail-toggle {
+    display: none;
+  }
+
+  .tree-detail.is-mobile .detail-actions {
+    gap: 4px;
+    margin: -8px -8px 0 0;
+  }
+
+  .tree-detail.is-mobile .icon-button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: #315746;
+    background: #edf3ed;
+  }
+
+  .tree-detail.is-mobile .icon-button:active {
+    background: #dbe8dc;
+  }
+
+  .tree-detail.is-mobile .detail-footer {
+    position: absolute;
+    top: 86px;
+    right: 18px;
+    margin: 0;
+  }
+
+  .tree-detail.is-mobile .tree-foliage {
+    justify-content: center;
+    gap: 8px;
+    width: 96px;
+    height: 48px;
+    border-radius: 9px;
+  }
+
+  .tree-detail.is-mobile .tree-foliage.is-leaf-only {
+    width: 48px;
+  }
+
+  .tree-detail.is-mobile .tree-summary-scientific,
+  .tree-detail.is-mobile .tree-summary-line {
+    margin-right: 112px;
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .detail-footer {
+    position: static;
+    justify-content: center;
+    margin: 14px 0 0;
+    padding: 10px 0;
+    border: 0;
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .tree-foliage {
+    gap: 12px;
+    width: 100%;
+    height: min(28dvh, 190px);
+    padding: 6px;
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .tree-foliage.is-leaf-only {
+    width: min(50%, 190px);
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .tree-foliage-illustration {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    flex: 1 1 0;
+    min-width: 0;
+    align-items: center;
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .tree-foliage svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .tree-foliage-caption {
+    display: block;
+    min-height: 2.5em;
+    padding: 4px 3px 0;
+    color: #416747;
+    font-size: 10px;
+    font-weight: 650;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .tree-summary-scientific,
+  .tree-detail.is-mobile.is-mobile-expanded .tree-summary-line {
+    margin-right: 0;
+  }
+
+  .tree-detail.is-mobile.is-mobile-expanded .tree-detail-extra {
+    border-top: 0;
   }
 
   .mobile-detail-handle {
@@ -2709,7 +2840,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   }
 
   .map-navigation.is-tree-open {
-    bottom: calc(52dvh + env(safe-area-inset-bottom));
+    bottom: calc(max(15dvh, 180px) + 16px + env(safe-area-inset-bottom));
   }
 
   .map-area:has(.tree-detail.is-mobile-expanded) .map-navigation {
