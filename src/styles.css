@@ -1625,7 +1625,7 @@ button:disabled {
   opacity: .65;
 }
 
-button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park-choice):not(.park-picker-option):not(.mobile-panel-direction):not(.detail-toggle):not(.map-control-button):not(.map-recenter-button):not(.map-locate-button):not(.map-dimension-button):not(.map-compass):not(.brand):not(.fullscreen-toggle):not(.icon-button):not(.text-button):not(.filter-chip):not(.mobile-sheet-trigger):not(.species-option):not(.sort-option):not(.info-button):not(.search-clear) {
+button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park-choice):not(.park-picker-option):not(.mobile-panel-direction):not(.detail-toggle):not(.map-control-button):not(.map-recenter-button):not(.map-locate-button):not(.map-dimension-button):not(.map-compass):not(.brand):not(.fullscreen-toggle):not(.icon-button):not(.text-button):not(.filter-chip):not(.mobile-sheet-trigger):not(.species-option):not(.sort-option):not(.info-button):not(.search-clear):not(.mobile-return-to-search) {
   min-height: 44px;
   border: 1px solid #c1d3c5;
   border-radius: 8px;
@@ -2526,6 +2526,13 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     bottom: 0;
     left: 0;
 
+    /*
+     * La hauteur comprend déjà la safe area. En content-box, le padding
+     * inférieur l'ajoutait une seconde fois — particulièrement visible sur
+     * les appareils Android à barre de navigation gestuelle, dont le S24.
+     */
+    box-sizing: border-box;
+
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2701,7 +2708,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
     left: 0;
 
     width: 100%;
-    height: max(15dvh, 180px);
+    height: max(20dvh, 224px);
     max-height: none;
 
     border: 0;
@@ -2739,26 +2746,68 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
 
   .tree-detail.is-mobile .detail-footer {
     position: absolute;
-    top: 86px;
     right: 18px;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    left: 18px;
     margin: 0;
+  }
+
+  .mobile-return-to-search {
+    position: absolute;
+    z-index: 1;
+    top: auto;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    left: 18px;
+    display: grid;
+    width: 44px;
+    height: 44px;
+    min-height: 0;
+    place-items: center;
+    border: 1px solid rgb(49 87 70 / .08);
+    border-radius: 50%;
+    padding: 0;
+    color: #315746;
+    background: rgb(255 255 255 / .94);
+    box-shadow: 0 6px 16px rgb(20 50 38 / .2);
+  }
+
+  .mobile-return-to-search .mobile-return-arrow {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+
+  .mobile-return-to-search:active {
+    background: #dbe8dc;
+    transform: scale(.96);
   }
 
   .tree-detail.is-mobile .tree-foliage {
     justify-content: center;
-    gap: 8px;
-    width: 96px;
-    height: 48px;
-    border-radius: 9px;
+    gap: 24px;
+    width: 100%;
+    height: 64px;
+    border-radius: 12px;
+    background: #f3f7ef;
   }
 
   .tree-detail.is-mobile .tree-foliage.is-leaf-only {
-    width: 48px;
+    width: 100%;
+  }
+
+  .tree-detail.is-mobile .tree-foliage svg {
+    width: 58px;
+    height: 64px;
   }
 
   .tree-detail.is-mobile .tree-summary-scientific,
   .tree-detail.is-mobile .tree-summary-line {
-    margin-right: 112px;
+    margin-right: 0;
   }
 
   .tree-detail.is-mobile.is-mobile-expanded .detail-footer {
@@ -2840,7 +2889,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   }
 
   .map-navigation.is-tree-open {
-    bottom: calc(max(15dvh, 180px) + 16px + env(safe-area-inset-bottom));
+    bottom: calc(max(20dvh, 224px) + 16px + env(safe-area-inset-bottom));
   }
 
   .map-area:has(.tree-detail.is-mobile-expanded) .map-navigation {

@@ -197,12 +197,14 @@ function TreeDetail({
   rawFeature,
   count,
   onClose,
+  onReturnToSearch,
   isMobile,
 }: {
   tree: Tree;
   rawFeature: unknown;
   count: number;
   onClose: () => void;
+  onReturnToSearch: () => void;
   isMobile: boolean;
 }) {
   const rawDialogRef = useRef<HTMLDialogElement>(null);
@@ -408,6 +410,9 @@ function TreeDetail({
           {detailsOpen ? "Réduire" : "Détails"}
         </button>
       </div>
+      {isMobile && <button type="button" className="mobile-return-to-search" onClick={onReturnToSearch} aria-label="Retour à la recherche" title="Retour à la recherche">
+        <svg className="mobile-return-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
+      </button>}
 
       {detailsOpen && (
         <div className="tree-detail-extra">
@@ -787,7 +792,6 @@ export default function App() {
     setMobilePanelOpen(false);
   };
   const focusTree = (tree: Tree) => {
-    if (focusTreeId === tree.id) return;
     setFocusTreeId(tree.id);
     setFocusRequest((request) => request + 1);
     setSelectedId(tree.id);
@@ -852,6 +856,12 @@ export default function App() {
   };
   const hasFilters = Boolean(query || speciesSort !== "vernacular");
   const openMobilePanel = () => {
+    setMobileSheetSnap("high");
+    setMobilePanelOpen(true);
+  };
+  const returnToSearch = () => {
+    setSelectedId(null);
+    setSelectedLandmark(null);
     setMobileSheetSnap("high");
     setMobilePanelOpen(true);
   };
@@ -936,7 +946,7 @@ export default function App() {
           <span className="sr-only">{isFullscreen ? "Quitter le mode plein écran" : "Activer le mode plein écran"}</span>
         </button>
       </header>
-      {selectedTree && <TreeDetail key={selectedTree.id} tree={selectedTree} rawFeature={data?.features.find((feature) => feature.id === selectedTree.id)} count={speciesStats.get(selectedTree.species)?.count ?? 1} onClose={closeDetail} isMobile={isMobile} />}
+      {selectedTree && <TreeDetail key={selectedTree.id} tree={selectedTree} rawFeature={data?.features.find((feature) => feature.id === selectedTree.id)} count={speciesStats.get(selectedTree.species)?.count ?? 1} onClose={closeDetail} onReturnToSearch={returnToSearch} isMobile={isMobile} />}
       {selectedLandmark && <LandmarkDetail landmark={selectedLandmark} onClose={closeLandmark} />}
       <nav className={`mobile-bottom-bar ${!mapSceneReady || mobilePanelOpen || selectedTree || selectedLandmark ? "is-hidden" : ""}`} aria-label="Navigation principale">
         <button ref={listTriggerRef} className="mobile-sheet-trigger" onClick={openMobilePanel}

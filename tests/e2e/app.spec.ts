@@ -95,6 +95,18 @@ test("la croix ferme le volet mobile, y compris au format compact", async ({ pag
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });
 
+test("le retour depuis une fiche mobile conserve la recherche en cours", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "Interaction propre au mobile");
+  await page.goto("/");
+  await openExplorer(page, true);
+  const search = page.getByRole("searchbox");
+  await search.fill("érable");
+  await page.locator(".tree-list-item").first().click();
+  await page.getByRole("button", { name: "Retour à la recherche" }).click();
+  await expect(page.getByRole("dialog", { name: "Explorer les arbres" })).toBeVisible();
+  await expect(search).toHaveValue("érable");
+});
+
 test("un tap hors du volet mobile le ferme et rend la carte", async ({ page, isMobile }) => {
   test.skip(!isMobile, "Interaction propre au mobile");
   await page.goto("/");
