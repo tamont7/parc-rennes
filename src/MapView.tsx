@@ -338,7 +338,7 @@ function setParkView(
   viewer: Viewer,
   bounds: readonly number[],
   viewMode: "2d" | "3d" = "3d",
-  mobileOberthurFraming = false,
+  mobileParkFraming: "oberthur" | "thabor" | null = null,
 ) {
   const [west, south, east, north] = bounds;
   /*
@@ -346,10 +346,14 @@ function setParkView(
    * légèrement à l'est du centre : le parc apparaît un peu à gauche, tout en
    * gardant l'ensemble de l'emprise lisible avec un cadrage plus rapproché.
    */
-  const longitude = (west + east) / 2 + (mobileOberthurFraming ? (east - west) * 0.12 : 0);
-  const latitude = (south + north) / 2 - (mobileOberthurFraming ? (north - south) * 0.08 : 0);
+  const isMobileParkFraming = mobileParkFraming !== null;
+  const zoomFactor = mobileParkFraming === "oberthur" ? 0.72 : 1;
+  const horizontalShift = mobileParkFraming === "oberthur" ? 0.12 : mobileParkFraming === "thabor" ? 0.05 : 0;
+  const verticalShift = mobileParkFraming === "oberthur" ? 0.08 : mobileParkFraming === "thabor" ? 0.03 : 0;
+  const longitude = (west + east) / 2 + (isMobileParkFraming ? (east - west) * horizontalShift : 0);
+  const latitude = (south + north) / 2 - (isMobileParkFraming ? (north - south) * verticalShift : 0);
   const centre = Cartesian3.fromDegrees(longitude, latitude);
-  const range = getParkViewRange(viewer, bounds) * (mobileOberthurFraming ? 0.72 : 1);
+  const range = getParkViewRange(viewer, bounds) * zoomFactor;
 
   viewer.camera.lookAt(
     centre,
@@ -2056,7 +2060,7 @@ export default function MapView(
         plan?.bbox ??
         PARK_PLAN_BOUNDS,
         "3d",
-        isMobile && parkId === "oberthur",
+        isMobile && (parkId === "oberthur" || parkId === "thabor") ? parkId : null,
       );
 
       let firstFrame =
@@ -3830,7 +3834,7 @@ export default function MapView(
       viewer,
       plan?.bbox ?? PARK_PLAN_BOUNDS,
       viewMode,
-      isMobile && parkId === "oberthur",
+      isMobile && (parkId === "oberthur" || parkId === "thabor") ? parkId : null,
     );
     viewer.scene.requestRender();
   }, [plan, revision]);
@@ -3896,7 +3900,7 @@ export default function MapView(
       plan?.bbox ??
       PARK_PLAN_BOUNDS,
       viewMode,
-      isMobile && parkId === "oberthur",
+      isMobile && (parkId === "oberthur" || parkId === "thabor") ? parkId : null,
     );
 
     viewer.scene.requestRender();
@@ -4081,8 +4085,8 @@ export default function MapView(
         </button>
         <button type="button" className="map-dimension-button" onClick={onChangeViewMode} aria-label={`Passer en vue ${viewMode === "3d" ? "2D" : "3D"}`}>{viewMode.toUpperCase()}</button>
         <div className="map-zoom-controls">
-          <button type="button" className="map-control-button" onClick={() => changeZoom("in")} aria-label="Zoomer">+</button>
-          <button type="button" className="map-control-button" onClick={() => changeZoom("out")} aria-label="Dézoomer">−</button>
+          <button type="button" className="map-control-button" onClick={() => changeZoom("in")} aria-label="Zoomer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
+          <button type="button" className="map-control-button" onClick={() => changeZoom("out")} aria-label="Dézoomer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg></button>
         </div>
       </div>
 

@@ -1864,6 +1864,17 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   border-top: 1px solid #dce4da;
 }
 
+/* Le caractère Unicode « − » a une ligne de base visuellement plus basse
+   que le « + » : ce léger ajustement les centre de la même façon. */
+.map-control-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
 .map-control-button:hover {
   background: #edf4ee;
 }
@@ -2263,6 +2274,11 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   color: #174b35;
 }
 
+/* L'attribution des données reste visible, sans le logo Cesium. */
+.map-credits .cesium-credit-logoContainer {
+  display: none !important;
+}
+
 .map-tooltip {
   position: absolute;
   z-index: 5;
@@ -2605,6 +2621,31 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
    */
   .map-navigation {
     bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  /* Raccourcis d'échelle réunis sur une même ligne : 3D, recadrage, puis −.
+     Le + reste naturellement au-dessus du − dans son groupe. */
+  .map-dimension-button {
+    position: fixed;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    color: #527164;
+    background: rgb(255 255 255 / .96);
+    bottom: calc(71px + env(safe-area-inset-bottom));
+    right: 109px;
+  }
+
+  .map-recenter-button {
+    position: fixed;
+    right: 66px;
+    /* Le − fait 34 px de haut : ce décalage centre les trois boutons. */
+    bottom: calc(71px + env(safe-area-inset-bottom));
+  }
+
+  .map-navigation.is-tree-open .map-dimension-button,
+  .map-navigation.is-tree-open .map-recenter-button {
+    bottom: calc(159px + env(safe-area-inset-bottom));
   }
 
   .map-legend {
