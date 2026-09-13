@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { Component, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { filterTrees, normalizeSearch, parseTreeData, TREE_COLORS, type Tree, type TreeData } from "./data";
 import { PARK_PLAN_SOURCE_URL, SOURCE_URL } from "./park";
 import { isPointInPark, parseParkPlan, type ParkLandmark, type ParkPlan } from "./plan";
@@ -213,6 +213,7 @@ function TreeDetail({
   isMobile: boolean;
 }) {
   const rawDialogRef = useRef<HTMLDialogElement>(null);
+  const detailRef = useRef<HTMLElement>(null);
   const headingRef =
     useRef<HTMLHeadingElement>(
       null,
@@ -232,11 +233,23 @@ function TreeDetail({
       null,
     );
 
+  const dragOffsetRef =
+    useRef(0);
+
+  const suppressSwipeClick =
+    useRef(false);
+
   const [
     dragOffset,
     setDragOffset,
   ] =
     useState(0);
+
+  const [
+    detailCanScroll,
+    setDetailCanScroll,
+  ] =
+    useState(false);
 
   /*
    * Compatibilité pendant la transition :
@@ -276,16 +289,51 @@ function TreeDetail({
     [tree.id],
   );
 
+  useLayoutEffect(() => {
+    const detail = detailRef.current;
+    if (!detail) return;
+
+    const updateScrollability = () => {
+      setDetailCanScroll(detail.scrollHeight > detail.clientHeight + 1);
+    };
+
+    updateScrollability();
+    const observer = new ResizeObserver(updateScrollability);
+    observer.observe(detail);
+    window.addEventListener("resize", updateScrollability);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScrollability);
+    };
+  }, [detailsOpen, tree.id]);
+
   const beginSwipe = (
     event:
       PointerEvent<HTMLElement>,
   ) => {
+    const beginsInScrollableContent =
+      event.target instanceof Element &&
+      event.target.closest(".tree-detail-extra");
+
+    if (
+      !isMobile ||
+      (detailsOpen &&
+        event.currentTarget.scrollTop > 0 &&
+        beginsInScrollableContent)
+    ) {
+      return;
+    }
+
     if (
       event.pointerType ===
       "touch"
     ) {
       touchStartY.current =
         event.clientY;
+
+      dragOffsetRef.current = 0;
+      suppressSwipeClick.current = false;
     }
   };
 
@@ -297,42 +345,69 @@ function TreeDetail({
       touchStartY.current !==
       null
     ) {
-      setDragOffset(event.clientY - touchStartY.current);
+      const offset = event.clientY - touchStartY.current;
+      dragOffsetRef.current = offset;
+      if (Math.abs(offset) > 8) suppressSwipeClick.current = true;
+      setDragOffset(offset);
     }
   };
 
-  const endSwipe =
-    () => {
-      if (dragOffset < -64 && isMobile) setDetailsOpen(true);
-      else if (dragOffset > 72) {
+  const resetSwipe = () => {
+    touchStartY.current = null;
+    dragOffsetRef.current = 0;
+    setDragOffset(0);
+  };
+
+  const cancelSwipe = () => {
+    resetSwipe();
+    suppressSwipeClick.current = false;
+  };
+
+  const endSwipe = () => {
+      const offset = dragOffsetRef.current;
+
+      if (offset < -64 && isMobile) setDetailsOpen(true);
+      else if (offset > 72) {
         if (isMobile && detailsOpen) setDetailsOpen(false);
         else onClose();
       }
 
-      touchStartY.current =
-        null;
+      resetSwipe();
 
-      setDragOffset(0);
+      /* Empêche un bouton ou un lien de s'activer après un glissement. */
+      window.setTimeout(() => {
+        suppressSwipeClick.current = false;
+      }, 0);
     };
+
+  const preventSwipeClick = (
+    event: MouseEvent<HTMLElement>,
+  ) => {
+    if (!suppressSwipeClick.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   return (
     <article
-      className={`tree-detail ${detailsOpen ? "is-expanded" : ""} ${isMobile ? `is-mobile ${detailsOpen ? "is-mobile-expanded" : ""}` : ""}`}
+      ref={detailRef}
+      className={`tree-detail ${detailsOpen ? "is-expanded" : ""} ${isMobile ? `is-mobile ${detailsOpen ? "is-mobile-expanded" : ""} ${detailCanScroll ? "can-scroll" : "cannot-scroll"}` : ""}`}
       aria-labelledby="detail-title"
       style={{
         transform:
           `translateY(${dragOffset}px)`,
       }}
+      onPointerDown={beginSwipe}
+      onPointerMove={moveSwipe}
+      onPointerUp={endSwipe}
+      onPointerCancel={cancelSwipe}
+      onClickCapture={preventSwipeClick}
     >
       {isMobile && <div
         className="mobile-detail-handle"
         aria-label="Faire glisser la fiche"
-        onPointerDown={beginSwipe}
-        onPointerMove={moveSwipe}
-        onPointerUp={endSwipe}
-        onPointerCancel={() => { touchStartY.current = null; setDragOffset(0); }}
       ><i aria-hidden="true" /></div>}
-      <div className="detail-topline" onPointerDown={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={() => { touchStartY.current = null; setDragOffset(0); }}>
+      <div className="detail-topline">
         <h2
           id="detail-title"
           ref={headingRef}

@@ -1958,10 +1958,20 @@ export default function MapView(
       | null = null;
 
     let touchZoomGesture:
-      | { pointerId: number; lastY: number; target: Cartesian3 }
+      | {
+        pointerId: number;
+        lastY: number;
+        target: Cartesian3 | undefined;
+        hasMoved: boolean;
+      }
       | null = null;
 
-    let touchZoomJustEnded = false;
+    let touchTapCandidate:
+      | { pointerId: number; startX: number; startY: number }
+      | null = null;
+
+    const activeTouchPointers = new Set<number>();
+    let suppressNativeTouchDoubleClick = false;
 
     try {
       viewer =
@@ -2107,7 +2117,16 @@ export default function MapView(
         ScreenSpaceEventType.LEFT_DOUBLE_CLICK,
       );
 
-      const zoomInOnDoubleClick = () => {
+      const zoomInOnDoubleClick = (event: MouseEvent) => {
+        // Sur certains navigateurs, un double-tap produit aussi un dblclick
+        // synthétique. Le tap est déjà traité par le geste tactile ci-dessous.
+        if (suppressNativeTouchDoubleClick) {
+          suppressNativeTouchDoubleClick = false;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+
         changeZoomInRef.current?.();
       };
 
@@ -2126,15 +2145,31 @@ export default function MapView(
       };
 
       const beginOrRememberTouch = (event: PointerEvent) => {
+        // Le prochain dblclick après une souris est un vrai double-clic, pas
+        // l'évènement synthétique émis par un touch précédent.
+        if (event.pointerType === "mouse") {
+          suppressNativeTouchDoubleClick = false;
+          return;
+        }
+
         if (
           !isMobileRef.current ||
-          event.pointerType !== "touch" ||
-          !event.isPrimary
+          event.pointerType !== "touch"
         ) {
           return;
         }
 
-        touchZoomJustEnded = false;
+        activeTouchPointers.add(event.pointerId);
+
+        // Un pincement ne doit pas préparer un faux double-tap à sa fin.
+        if (activeTouchPointers.size > 1) {
+          lastTouchTap = null;
+          touchTapCandidate = null;
+          return;
+        }
+
+        if (!event.isPrimary) return;
+
         const position = getCanvasPosition(event);
         const now = performance.now();
         const previousTap = lastTouchTap;
@@ -2145,11 +2180,33 @@ export default function MapView(
             position.y - previousTap.y,
           ) <= 32;
 
-        if (!isSecondTap) return;
+        if (!isSecondTap) {
+          touchTapCandidate = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+          };
+          return;
+        }
 
         lastTouchTap = null;
-        changeZoomInRef.current?.();
-        touchZoomJustEnded = true;
+        touchTapCandidate = null;
+        suppressNativeTouchDoubleClick = true;
+
+        const target = viewer!.camera.pickEllipsoid(
+          position,
+          viewer!.scene.globe.ellipsoid,
+        );
+
+        touchZoomGesture = {
+          pointerId: event.pointerId,
+          lastY: event.clientY,
+          target,
+          hasMoved: false,
+        };
+        viewer!.scene.screenSpaceCameraController.enableInputs = false;
+        canvas.setPointerCapture(event.pointerId);
+
         event.preventDefault();
         event.stopImmediatePropagation();
       };
@@ -2165,12 +2222,15 @@ export default function MapView(
         const deltaY = event.clientY - touchZoomGesture.lastY;
         touchZoomGesture.lastY = event.clientY;
 
+        // Le moindre déplacement transforme le second tap en geste continu.
+        // Ainsi, le relâchement ne peut pas ajouter un dernier cran de zoom.
+        touchZoomGesture.hasMoved = true;
+
         if (deltaY !== 0) {
           const camera = viewer!.camera;
-          const distance = Cartesian3.distance(
-            camera.positionWC,
-            touchZoomGesture.target,
-          );
+          const distance = touchZoomGesture.target
+            ? Cartesian3.distance(camera.positionWC, touchZoomGesture.target)
+            : Math.max(12, camera.positionCartographic.height);
           const amount = Math.max(
             1,
             distance * Math.min(0.08, Math.abs(deltaY) * 0.002),
@@ -2185,57 +2245,73 @@ export default function MapView(
         event.stopImmediatePropagation();
       };
 
-      const endTouchZoom = (event: PointerEvent) => {
+      const endTouchGestureOrRememberTap = (event: PointerEvent) => {
         if (
-          !touchZoomGesture ||
-          event.pointerId !== touchZoomGesture.pointerId
-        ) {
-          return;
-        }
-
-        touchZoomGesture = null;
-        touchZoomJustEnded = true;
-        viewer!.scene.screenSpaceCameraController.enableInputs = true;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      };
-
-      const rememberTouchTap = (event: PointerEvent) => {
-        if (
-          touchZoomGesture ||
-          touchZoomJustEnded ||
           !isMobileRef.current ||
-          event.pointerType !== "touch" ||
-          !event.isPrimary
+          event.pointerType !== "touch"
         ) {
           return;
         }
 
-        touchZoomJustEnded = false;
+        const gesture = touchZoomGesture;
+        if (gesture && event.pointerId === gesture.pointerId) {
+          touchZoomGesture = null;
+          viewer!.scene.screenSpaceCameraController.enableInputs = true;
+          if (canvas.hasPointerCapture(event.pointerId)) {
+            canvas.releasePointerCapture(event.pointerId);
+          }
 
-        const position = getCanvasPosition(event);
-        lastTouchTap = {
-          x: position.x,
-          y: position.y,
-          time: performance.now(),
-        };
+          // Un deuxième tap relâché sans déplacement zoome une fois. Si le
+          // doigt est gardé puis déplacé, seul le déplacement vertical règle
+          // le zoom, sans clic ni rotation concurrente de Cesium.
+          if (event.type === "pointerup" && !gesture.hasMoved) {
+            changeZoomInRef.current?.();
+          }
+
+          activeTouchPointers.delete(event.pointerId);
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+
+        const candidate = touchTapCandidate;
+        const isTap =
+          event.type === "pointerup" &&
+          activeTouchPointers.size === 1 &&
+          candidate?.pointerId === event.pointerId &&
+          Math.hypot(
+            event.clientX - candidate.startX,
+            event.clientY - candidate.startY,
+          ) <= 12;
+
+        activeTouchPointers.delete(event.pointerId);
+        touchTapCandidate = null;
+
+        if (isTap) {
+          const position = getCanvasPosition(event);
+          lastTouchTap = {
+            x: position.x,
+            y: position.y,
+            time: performance.now(),
+          };
+        } else {
+          lastTouchTap = null;
+        }
       };
 
       const canvas = viewer.scene.canvas;
       canvas.addEventListener("dblclick", zoomInOnDoubleClick);
       canvas.addEventListener("pointerdown", beginOrRememberTouch, true);
       canvas.addEventListener("pointermove", updateTouchZoom, true);
-      canvas.addEventListener("pointerup", endTouchZoom, true);
-      canvas.addEventListener("pointercancel", endTouchZoom, true);
-      canvas.addEventListener("pointerup", rememberTouchTap);
+      canvas.addEventListener("pointerup", endTouchGestureOrRememberTap, true);
+      canvas.addEventListener("pointercancel", endTouchGestureOrRememberTap, true);
 
       cleanups.push(() => {
         canvas.removeEventListener("dblclick", zoomInOnDoubleClick);
         canvas.removeEventListener("pointerdown", beginOrRememberTouch, true);
         canvas.removeEventListener("pointermove", updateTouchZoom, true);
-        canvas.removeEventListener("pointerup", endTouchZoom, true);
-        canvas.removeEventListener("pointercancel", endTouchZoom, true);
-        canvas.removeEventListener("pointerup", rememberTouchTap);
+        canvas.removeEventListener("pointerup", endTouchGestureOrRememberTap, true);
+        canvas.removeEventListener("pointercancel", endTouchGestureOrRememberTap, true);
         if (touchZoomGesture) {
           viewer!.scene.screenSpaceCameraController.enableInputs = true;
           touchZoomGesture = null;

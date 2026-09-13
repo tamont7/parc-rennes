@@ -2528,9 +2528,23 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   overscroll-behavior: contain;
 }
 
-.tree-detail>.detail-topline {
+/* Quand la fiche tient entièrement à l'écran, sa surface entière devient une
+   prise. On préserve `pan-y` dès que le détail peut réellement défiler. */
+.tree-detail.is-mobile.cannot-scroll {
   touch-action: none;
 }
+
+  /* Les zones de résumé ne défilent pas : elles servent aussi de prise large
+     pour ouvrir ou réduire la fiche, sans empêcher le détail développé de
+     défiler. */
+  .tree-detail.is-mobile>.detail-topline,
+  .tree-detail.is-mobile>.tree-summary-scientific,
+  .tree-detail.is-mobile>.tree-summary-line,
+  .tree-detail.is-mobile>.detail-footer,
+  .tree-detail.is-mobile>.mobile-return-to-search,
+  .tree-detail.is-mobile>.mobile-detail-handle {
+    touch-action: none;
+  }
 
 .raw-data-dialog {
   touch-action: pan-y;
