@@ -1557,6 +1557,7 @@ h1 {
     border-radius: 20px 20px 0 0;
     padding: 0;
     box-shadow: 0 -10px 30px rgba(20, 50, 38, .17);
+    -webkit-tap-highlight-color: transparent;
     transition: transform .16s ease-out;
   }
 
@@ -1617,6 +1618,16 @@ h1 {
 
   .mobile-panel-handle:active {
     cursor: grabbing;
+  }
+
+  /* Le haut du volet ne défile pas : ces zones forment une prise large. La
+     liste et les menus conservent leur défilement vertical. */
+  .explorer-panel>.mobile-panel-title,
+  .explorer-panel>.search-combobox,
+  .explorer-panel>.filters,
+  .explorer-panel>.results-heading,
+  .explorer-panel>.panel-footer {
+    touch-action: none;
   }
 
   .mobile-panel-direction {

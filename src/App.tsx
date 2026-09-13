@@ -683,6 +683,8 @@ export default function App() {
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const explorerTouchStartY = useRef<number | null>(null);
+  const explorerDragOffsetRef = useRef(0);
+  const suppressExplorerSwipeClick = useRef(false);
   const [explorerDragOffset, setExplorerDragOffset] = useState(0);
   const parkName = activePark === "thabor" ? "Parc du Thabor" : "Parc Oberthür";
   const treeDataUrl = activePark === "thabor" ? THABOR_DATA_URL : DATA_URL;
@@ -957,19 +959,41 @@ export default function App() {
     else if (nextIndex < sheetSnaps.length) setMobileSheetSnap(sheetSnaps[nextIndex]);
   };
   const beginExplorerSwipe = (event: PointerEvent<HTMLElement>) => {
+    if (event.target instanceof Element && event.target.closest(".tree-list, .species-suggestions, .species-picker-menu, input, select, textarea")) return;
     if (event.pointerType === "touch") {
       explorerTouchStartY.current = event.clientY;
+      explorerDragOffsetRef.current = 0;
+      suppressExplorerSwipeClick.current = false;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
   };
   const moveExplorerSwipe = (event: PointerEvent<HTMLElement>) => {
-    if (explorerTouchStartY.current !== null) setExplorerDragOffset(event.clientY - explorerTouchStartY.current);
+    if (explorerTouchStartY.current !== null) {
+      const offset = event.clientY - explorerTouchStartY.current;
+      explorerDragOffsetRef.current = offset;
+      if (Math.abs(offset) > 8) suppressExplorerSwipeClick.current = true;
+      setExplorerDragOffset(offset);
+    }
   };
   const endExplorerSwipe = () => {
-    if (explorerDragOffset > 72) moveMobileSheet(-1);
-    else if (explorerDragOffset < -72) moveMobileSheet(1);
+    const offset = explorerDragOffsetRef.current;
+    if (offset > 72) moveMobileSheet(-1);
+    else if (offset < -72) moveMobileSheet(1);
     explorerTouchStartY.current = null;
+    explorerDragOffsetRef.current = 0;
     setExplorerDragOffset(0);
+    window.setTimeout(() => { suppressExplorerSwipeClick.current = false; }, 0);
+  };
+  const cancelExplorerSwipe = () => {
+    explorerTouchStartY.current = null;
+    explorerDragOffsetRef.current = 0;
+    suppressExplorerSwipeClick.current = false;
+    setExplorerDragOffset(0);
+  };
+  const preventExplorerSwipeClick = (event: MouseEvent<HTMLElement>) => {
+    if (!suppressExplorerSwipeClick.current) return;
+    event.preventDefault();
+    event.stopPropagation();
   };
   const hasFilters = Boolean(query || speciesSort !== "vernacular");
   const openMobilePanel = () => {
@@ -1082,11 +1106,12 @@ export default function App() {
     </section>
     {isMobile ? <dialog id="mobile-explorer" className={`explorer-panel is-mobile-${mobileSheetSnap}`} ref={dialogRef} aria-label="Explorer les arbres" tabIndex={-1} style={{ transform: `translateY(${explorerDragOffset}px)` }}
       onCancel={(event) => { event.preventDefault(); setMobilePanelOpen(false); }}
+      onPointerDown={beginExplorerSwipe} onPointerMove={moveExplorerSwipe} onPointerUp={endExplorerSwipe} onPointerCancel={cancelExplorerSwipe} onClickCapture={preventExplorerSwipeClick}
       onClose={() => setMobilePanelOpen(false)} onClick={(event) => {
         // Sur un dialogue modal, un clic sur le backdrop remonte au dialogue.
         // Il doit donc fermer le volet plutôt que changer sa hauteur.
         if (event.target === event.currentTarget) setMobilePanelOpen(false);
-      }}><div className={`mobile-panel-handle is-${mobileSheetSnap}`} onPointerDown={beginExplorerSwipe} onPointerMove={moveExplorerSwipe} onPointerUp={endExplorerSwipe} onPointerCancel={endExplorerSwipe}>
+      }}><div className={`mobile-panel-handle is-${mobileSheetSnap}`}>
         <i aria-hidden="true" />
       </div>
       <div className={`mobile-panel-title is-${mobileSheetSnap}`}>
