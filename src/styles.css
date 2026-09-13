@@ -2916,6 +2916,10 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   .tree-detail.is-mobile {
     z-index: 11;
 
+    /* La fiche écoute les glissements : sans ceci, WebKit/Chrome y affiche
+       son reflet tactile bleu au toucher. */
+    -webkit-tap-highlight-color: transparent;
+
     /* Chrome Android peut signaler un inset bas alors que la barre système
        reste hors du viewport. Comme pour la barre basse, on ne le réserve
        que sur les navigateurs iOS qui en ont réellement besoin. */

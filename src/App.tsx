@@ -611,6 +611,7 @@ function TreeDetail({
           <button type="button" className="detail-toggle raw-data-toggle" aria-haspopup="dialog" onClick={() => rawDialogRef.current?.showModal()}>Données brutes</button>
         </div>
       )}
+      {isMobile && detailsOpen && <div className="mobile-detail-drag-surface" aria-hidden="true" />}
       {detailsOpen && !isMobile && <button
         className="detail-toggle desktop-detail-collapse"
         onClick={() => setDetailsOpen(false)}
