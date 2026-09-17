@@ -43,6 +43,7 @@ import {
 
 import { PARK_PLAN_BOUNDS } from "./park";
 import { MAX_LOCATION_AGE_MS, PRECISE_LOCATION_METRES, readLocation, type UserLocation } from "./geolocation";
+import { LocationNotice } from "./LocationNotice";
 import { buildPathNetwork, simplifyPath } from "./pathGeometry";
 import entranceIcon from "./assets/park-entrance.svg";
 import {
@@ -1642,11 +1643,14 @@ export default function MapView(
   }, [userLocation]);
 
   useEffect(() => {
+    // Expiration is a passive state change, not a new user request.
+    if (locationStatus === "stale") {
+      setLocationNoticeVisible(false);
+      return;
+    }
     setLocationNoticeVisible(true);
-    if (!["too-far", "error", "imprecise", "stale"].includes(locationStatus)) return;
-
     // Keep the status so repeated GPS errors do not reopen the same notice.
-    const timeoutId = window.setTimeout(() => setLocationNoticeVisible(false), 4000);
+    const timeoutId = window.setTimeout(() => setLocationNoticeVisible(false), 5000);
     return () => window.clearTimeout(timeoutId);
   }, [locationStatus, locationRequest]);
 
@@ -4169,12 +4173,16 @@ export default function MapView(
         </div>
       </div>
 
-      {locationStatus === "locating" && <p className="map-location-notice" role="status">Localisation en cours…</p>}
-      {locationNoticeVisible && locationStatus === "imprecise" && <p className="map-location-notice" role="status">Position non obtenue pour le parc. Relancez la localisation si besoin.</p>}
-      {locationNoticeVisible && locationStatus === "stale" && <p className="map-location-notice" role="status">Dernière position connue. Relancez la localisation pour l’actualiser.</p>}
-      {locationStatus === "idle" && userLocation && <p className="map-location-notice" role="status">{userLocation.accuracy > PRECISE_LOCATION_METRES ? "Position approximative. " : ""}Précision estimée : {Math.ceil(userLocation.accuracy)} m. Le cercle indique la zone d’incertitude.</p>}
-      {locationNoticeVisible && locationStatus === "too-far" && <p className="map-location-notice is-error" role="alert">Vous êtes trop loin du parc affiché.</p>}
-      {locationNoticeVisible && locationStatus === "error" && <p className="map-location-notice is-error" role="alert">La position n’a pas pu être obtenue. Vérifiez l’autorisation de localisation.</p>}
+      {locationNoticeVisible && (locationStatus !== "idle" || userLocation) && (
+        <LocationNotice isError={locationStatus === "too-far" || locationStatus === "error"}>
+          {locationStatus === "locating" && "Localisation en cours…"}
+          {locationStatus === "imprecise" && "Position non obtenue pour le parc. Relancez la localisation si besoin."}
+          {locationStatus === "stale" && "Dernière position connue. Relancez la localisation pour l’actualiser."}
+          {locationStatus === "idle" && userLocation && <>{userLocation.accuracy > PRECISE_LOCATION_METRES ? "Position approximative. " : ""}Précision estimée : {Math.ceil(userLocation.accuracy)} m. Le cercle indique la zone d’incertitude.</>}
+          {locationStatus === "too-far" && "Vous êtes trop loin du parc affiché."}
+          {locationStatus === "error" && "La position n’a pas pu être obtenue. Vérifiez l’autorisation de localisation."}
+        </LocationNotice>
+      )}
 
       {tooltip && (
         <div

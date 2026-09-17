@@ -2135,11 +2135,14 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
 }
 
 .map-location-notice {
-  position: absolute;
-  z-index: 4;
-  bottom: 24px;
+  position: fixed;
+  z-index: 100;
+  inset: auto;
+  top: calc(76px + env(safe-area-inset-top, 0px));
   left: 50%;
-  max-width: calc(100% - 32px);
+  width: max-content;
+  max-width: min(420px, calc(100% - 32px));
+  pointer-events: none;
   margin: 0;
   border: 1px solid #cde0d1;
   border-radius: 8px;
@@ -2147,9 +2150,14 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   color: #315746;
   background: rgb(251 252 249 / .96);
   box-shadow: 0 4px 14px rgba(12, 42, 29, .12);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.35;
   transform: translateX(-50%);
+}
+
+.map-location-notice::backdrop {
+  background: transparent;
+  pointer-events: none;
 }
 
 .map-location-notice.is-error {

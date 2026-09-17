@@ -17,7 +17,22 @@ test("localise ponctuellement et affiche la précision de la mesure", async ({ p
   await button.click();
   await expect(page.getByText(/Position approximative/)).toBeVisible();
   await expect(button).toHaveClass(/is-active/);
+  await page.clock.install();
   await context.setGeolocation({ longitude: -1.66, latitude: 48.112, accuracy: 5 });
   await button.click();
   await expect(page.getByText(/Précision estimée : 5 m/)).toBeVisible();
+  await page.clock.pauseAt(await page.evaluate(() => Date.now()));
+  const notice = page.locator(".map-location-notice");
+  await expect(notice).toHaveJSProperty("popover", "manual");
+  await expect(notice).toHaveCSS("pointer-events", "none");
+  await page.locator(".info-dialog").last().evaluate((dialog: HTMLDialogElement) => dialog.showModal());
+  await expect(page.locator(".info-dialog[open]")).toBeVisible();
+  await expect(notice).toBeVisible();
+  expect(await notice.evaluate((element) => element.matches(":popover-open"))).toBe(true);
+  // Observe expiration without waiting a full minute for the stored fix to age.
+  await page.clock.fastForward(5100);
+  await expect(notice).toHaveCount(0);
+  await page.clock.fastForward(60_000);
+  await expect(notice).toHaveCount(0);
+  await expect(button).toHaveClass(/is-active/);
 });
