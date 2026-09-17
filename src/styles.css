@@ -2660,18 +2660,26 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   }
 
   .map-navigation {
+    /* Même correction Android que la barre basse : inset réservé à Safari. */
+    --mobile-navigation-safe-area: 0px;
     right: 16px;
-    bottom: calc(16px + env(safe-area-inset-bottom));
+    bottom: calc(16px + var(--mobile-navigation-safe-area));
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .map-navigation {
+      --mobile-navigation-safe-area: env(safe-area-inset-bottom);
+    }
   }
 
   /* Une petite gouttière sépare le groupe du bord supérieur de la barre basse. */
   .map-area:has(.mobile-bottom-bar:not(.is-hidden)) .map-navigation {
-    bottom: calc(64px + env(safe-area-inset-bottom));
+    bottom: calc(64px + var(--mobile-navigation-safe-area));
   }
 
   /* La navigation reste juste au-dessus de la fiche résumée. */
   .map-navigation.is-tree-open {
-    bottom: calc(160px + env(safe-area-inset-bottom));
+    bottom: calc(160px + var(--mobile-navigation-safe-area));
   }
 
   .map-area:has(.tree-detail-extra) .map-navigation {
@@ -3176,7 +3184,7 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   }
 
   .map-navigation.is-tree-open {
-    bottom: calc(max(20dvh, 224px) + 16px + env(safe-area-inset-bottom));
+    bottom: calc(max(20dvh, 224px) + 16px + var(--mobile-navigation-safe-area));
   }
 
   .map-area:has(.tree-detail.is-mobile-expanded) .map-navigation {
