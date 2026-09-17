@@ -16,6 +16,28 @@ const plan = parseParkPlan(planSnapshot);
 const { trees, metadata } = parseTreeData(snapshot, (longitude, latitude) => isPointInPark(plan, [longitude, latitude]));
 const first = snapshot.features[0];
 
+test("le filtre d’espèce conserve les arbres portant des noms usuels différents", () => {
+  const thaborPlan = parseThaborPlan(thaborPlanSnapshot);
+  const { trees: thaborTrees } = parseTreeData(thaborTreeSnapshot,
+    (longitude, latitude) => isPointInPark(thaborPlan, [longitude, latitude]));
+
+  for (const [species, name, count] of [
+    ["Ginkgo biloba", "Arbre aux 40 écus", 3],
+    ["Juglans nigra", "Noyer noir", 2],
+    ["Prunus lusitanica", "Cerisier", 3],
+  ] as const) {
+    const expected = thaborTrees.filter((tree) => tree.species === species);
+    assert.equal(expected.length, count);
+    assert.deepEqual(filterTrees(thaborTrees, name, species, false), expected);
+    assert(filterTrees(thaborTrees, name, "", false)
+      .filter((tree) => tree.species === species).length < count);
+  }
+
+  const ginkgo = thaborTrees.find((tree) => tree.species === "Ginkgo biloba")!;
+  const remarkable = { ...ginkgo, name: "Autre nom usuel", remarkable: true };
+  assert.deepEqual(filterTrees([remarkable, ...thaborTrees], "Arbre aux 40 écus", "Ginkgo biloba", true), [remarkable]);
+});
+
 test("les entrées sont des points OSM et les allées voisines de Saint-Melaine sont présentes", () => {
   const thabor = parseThaborPlan(thaborPlanSnapshot);
   assert.equal(plan.features.filter((f) => f.properties.kind === "entrance").length, 5);

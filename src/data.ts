@@ -221,7 +221,9 @@ export function filterTrees(
 ) {
   const terms =
     normalizeSearch(
-      query,
+      // Une espèce sélectionnée prime sur le nom usuel affiché dans la recherche.
+      // Ce nom peut varier entre les arbres d’un même taxon.
+      species ? "" : query,
     )
       .split(/\s+/)
       .filter(Boolean);
