@@ -1989,6 +1989,13 @@ button:not(.tree-foliage):not(.tree-list-item):not(.focus-tree-button):not(.park
   row-gap: 8px;
   align-items: end;
   justify-items: center;
+  /* La grille réserve des cellules vides autour des contrôles. Elle ne doit
+     pas empêcher les gestes de la carte dans ces interstices. */
+  pointer-events: none;
+}
+
+.map-navigation > * {
+  pointer-events: auto;
 }
 
 .map-navigation .map-locate-button {
